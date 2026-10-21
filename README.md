@@ -278,4 +278,4 @@ Queda fuera del alcance de la v1, ya planificado:
 
 ## Licencia
 
-Por definir.
+[MIT](LICENSE) © 2026 Hayderfino
