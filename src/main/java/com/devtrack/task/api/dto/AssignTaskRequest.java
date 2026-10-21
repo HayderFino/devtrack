@@ -1,5 +1,7 @@
 package com.devtrack.task.api.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * Peticion de asignacion de tarea.
  *
@@ -8,4 +10,5 @@ package com.devtrack.task.api.dto;
  *
  * @param assigneeId usuario asignado, o {@code null} para desasignar
  */
-public record AssignTaskRequest(Long assigneeId) {}
+public record AssignTaskRequest(
+        @Schema(description = "Usuario asignado; null desasigna", example = "42", minimum = "1") Long assigneeId) {}

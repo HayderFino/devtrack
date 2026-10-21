@@ -156,10 +156,11 @@ Reevaluar RLS de PostgreSQL en la fase `F3-ARCH`.
 ## Resultado de la implementacion
 
 - **Aceptado**: `ProjectAccessGuard` explicito, fuente de verdad en `project_members`.
-- El 404 para no-miembros usa **la misma plantilla de mensaje** que el 404 de recurso
-  inexistente: `"No existe un proyecto con id " + id`. El unico identificador que
-  aparece es el que pidio el cliente, de modo que la respuesta no revela la existencia
-  del recurso. Hay un test que lo verifica comparando ambos cuerpos.
+- El 404 para no-miembros usa **exactamente el mismo mensaje** que el 404 de recurso
+  inexistente: `"El proyecto no existe o no tienes acceso"`. La respuesta es
+  byte a byte identica en ambos casos (salvo la marca de tiempo y la ruta), de modo que no
+  revela la existencia del recurso. Hay un test de integracion que lo verifica
+  comparando ambos cuerpos.
 - La matriz de permisos esta cubierta por tests **parametrizados** (rol x operacion), de
   modo que un cambio en la politica rompe la compilacion de las pruebas.
 - **Ajuste detectado durante la implementacion**: el borrado de una tarea usa

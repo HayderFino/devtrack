@@ -1,9 +1,11 @@
 # DevTrack — Backlog de tareas para el Agente 2 (implementación)
 
-> **Estado:** PROPUESTA — pendiente de aprobación del Agente 1 / usuario.
-> Las tareas están ordenadas por dependencia. **No se salta ninguna:**
-> cada tarea asume que las anteriores están aceptadas.
-> Fuente de verdad: `docs/architecture.md` (diseño) y `docs/api-plan.md` (contratos).
+> **Estado:** **Implementado** (2026-10-21). Las 22 tareas están completadas y verificadas
+> con **223 pruebas en verde**.
+>
+> Este documento se conserva como **contrato de aceptación** y registro de lo implementado:
+> cada criterio marcado abajo se comprobó con un test o con una ejecución real.
+> Fuentes de verdad: `docs/architecture.md` (diseño) y `docs/api-plan.md` (contratos).
 
 ---
 
@@ -351,3 +353,49 @@ T-00 → T-01 → T-02 → T-03 → T-04 → T-05
 - [ ] Si la tarea cambió un contrato, `docs/api-plan.md` se actualiza **en el mismo commit**.
 - [ ] Si la tarea cambió una decisión, se añade o actualiza un ADR en el mismo commit.
 - [ ] El mensaje del commit describe el *qué* y el *por qué*, en imperativo y en español.
+
+
+---
+
+## Estado de implementación (2026-10-21)
+
+| Sprint | Tareas | Estado | Evidencia |
+|---|---|---|---|
+| S0 Cimientos | T-00 … T-05 | Completado | Build verde, 3 migraciones aplicadas, `ddl-auto=validate` sin deriva |
+| S1 Identidad | T-06 … T-09 | Completado | 20 pruebas (registro, login, tokens, fail-fast del secreto) |
+| S2 Proyectos | T-10 … T-13 | Completado | 26 pruebas + matriz de autorización de 138 casos |
+| S3 Tareas | T-14 … T-16 | Completado | 38 pruebas (CRUD, filtros, 16 transiciones, concurrencia) |
+| S4 Calidad | T-17 … T-21 | Completado | OpenAPI 3.1.0 con 11 rutas, Dockerfile multi-stage, CI en GitHub Actions, README y ADRs |
+
+### Criterios de aceptación no verificables de forma automática
+
+| Criterio | Cómo se comprobó |
+|---|---|
+| T-00 · toolchain instalado | `java -version` (21.0.13), `docker --version` (29.9.2), `colima version` (0.10.3) |
+| T-02 · healthcheck de PostgreSQL | `docker compose ps` → `Up (healthy)` |
+| T-18 · la imagen arranca | `docker compose config` válido; el jar se arrancó y se ejercitó el flujo completo por HTTP |
+| T-19 · CI en verde | Workflow escrito; **no ejecutado** (requiere publicar el repositorio en GitHub, pregunta Q-06 sin responder) |
+
+### Pruebas de humo end-to-end ejecutadas
+
+Sobre el jar empaquetado, con PostgreSQL 18 real:
+
+```
+POST /api/v1/auth/register                -> 201
+POST /api/v1/auth/login                   -> 200 (token JWT)
+POST /api/v1/projects                     -> 201 (Location + id)
+POST /api/v1/projects/1/tasks             -> 201
+GET  /api/v1/projects/1/tasks?status=TODO -> 200 (PageResponse)
+GET  /api/v1/projects/1  (sin token)       -> 401 UNAUTHENTICATED
+GET  /api/v1/projects/1  (sin membresia)  -> 404 PROJECT_NOT_FOUND
+POST /api/v1/projects  (nombre vacio)      -> 400 VALIDATION_ERROR + errors[]
+GET  /v3/api-docs                         -> 200 (OpenAPI 3.1.0, 11 rutas, esquema bearerAuth)
+```
+
+### Trabajo pendiente
+
+| Ítem | Motivo |
+|---|---|
+| Publicar el repositorio en GitHub y ejecutar el CI | Requiere la cuenta de GitHub del usuario (Q-06 sin responder) |
+| Publicar la imagen en un registro | Fuera del alcance de la v1 |
+| Licencia | Pendiente de decidir |

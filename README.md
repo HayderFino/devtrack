@@ -1,78 +1,281 @@
 # DevTrack
 
-API REST para gestion de proyectos y tareas. Monolito modular con Spring Boot.
+API REST para la gestión de **proyectos**, **miembros** y **tareas**. Monolito modular en
+Java y Spring Boot, con autorización por rol en cada proyecto, persistencia relacional
+versionada con Flyway y una suite de pruebas de integración contra PostgreSQL real.
 
-**Estado:** Sprints 0-3 completados. Ya estan implementados el registro/login con JWT,
-`GET /api/v1/users/me`, los endpoints de proyectos y membresias, y el CRUD de tareas
-(`/api/v1/projects/{projectId}/tasks`) con filtros, maquina de estados y locking optimista.
-Queda pendiente el Sprint 4 (OpenAPI, Docker, CI, hardening y documentacion final).
+**Estado:** functionality completa de la v1. 223 pruebas en verde.
+
+---
+
+## Índice
+
+- [Modelo de dominio](#modelo-de-dominio)
+- [Stack](#stack)
+- [Requisitos previos](#requisitos-previos)
+- [Arranque local](#arranque-local)
+- [Pruebas](#pruebas)
+- [Autenticación y uso](#autenticación-y-uso)
+- [Autorización](#autorización)
+- [Contrato de errores](#contrato-de-errores)
+- [Estructura del proyecto](#estructura-del-proyecto)
+- [Decisiones de diseño](#decisiones-de-diseño)
+- [Documentación](#documentación)
+- [Qué no incluye esta versión](#qué-no-incluye-esta-versión)
+
+---
+
+## Modelo de dominio
+
+```
+users ──┬──< project_members >── projects ──< tasks
+        │                              ▲            │
+        └──────────────────────────────┴────────────┘
+                    (assignee_id, created_by)
+```
+
+- Un **proyecto** tiene **miembros**, y cada miembro tiene un rol dentro de él:
+  `OWNER`, `EDITOR` o `VIEWER`.
+- Un **usuario** puede pertenecer a muchos proyectos.
+- Una **tarea** pertenece a un proyecto y tiene título, descripción, estado, prioridad,
+  fecha límite y asignado. El asignado **debe ser miembro del proyecto**.
+
+La **fuente de verdad de la autorización es la tabla `project_members`**: conocer el
+identificador de un proyecto o de una tarea no concede ningún acceso.
 
 ## Stack
 
-| Componente | Version |
+| Componente | Versión |
 |---|---|
-| Java | 21 (probado con 21.0.13) |
+| Java | 21 (LTS) |
 | Spring Boot | 4.1.1 |
-| Maven | 3.9.16 (wrapper) |
-| Spring Modulith | 2.1.1 |
-| Spring Security | 7.1.1 (gestionado por Boot) |
+| Spring Framework / Security | 7.0.9 / 7.1.1 (gestionados por Boot) |
+| Spring Data JPA (Hibernate) | 7.0.9 / 7.4.5 (gestionados por Boot) |
+| PostgreSQL | 18 (`postgres:18-alpine`) |
+| Flyway | 12.4.0 (gestionado por Boot) |
+| Testcontainers | 2.0.5 (gestionado por Boot) |
 | springdoc-openapi | 3.1.1 |
 | jjwt | 0.13.0 |
-| PostgreSQL | 18 (`postgres:18-alpine`) |
-| Docker Engine / Compose | 29.5.2 / 5.6.1 (probado) |
+| Maven | 3.9.16 (Maven Wrapper) |
+| Docker Engine / Compose | 29.9.2 / 5.6.1 |
 
-## Requisitos
+Detalle y alternativas descartadas: [`ADR-0002`](docs/adr/0002-stack-y-versiones.md).
 
-- JDK 21 en `JAVA_HOME` (`java -version` debe mostrar `21.x`).
-- Docker con el plugin `docker compose` (Docker Desktop o Colima).
-- No hace falta Maven instalado: se usa `./mvnw`.
+## Requisitos previos
 
-Con Colima: `colima start` antes de levantar la base de datos.
+| Herramienta | Versión | Notas |
+|---|---|---|
+| JDK | 21 | `java -version` debe mostrar `21.x` |
+| Docker | con Compose v2 | Docker Desktop o Colima |
+| Maven | — | No hace falta: se usa `./mvnw` |
+
+**Con Colima** (alternativa a Docker Desktop en macOS):
+
+```bash
+colima start
+export DOCKER_HOST="unix://$HOME/.colima/default/docker.sock"
+```
+
+Colima no permite montar el socket de Docker en un contenedor, que es lo que necesita
+*Ryuk* (el recolector de contenedores de Testcontainers). Por eso hay que desactivar
+Ryuk en este entorno:
+
+```bash
+export TESTCONTAINERS_RYUK_DISABLED=true
+```
+
+Los contenedores los limpia Testcontainers al cerrar el contexto de Spring, de modo que no
+se acumulan. Con Docker Desktop no hace falta ninguna de las dos variables.
 
 ## Arranque local
 
 ```bash
+# 1. Configurar el entorno
 cp .env.example .env
-docker compose up -d
+#    edita DEVTRACK_JWT_SECRET en .env: minimo 32 caracteres
+
+# 2. Levantar PostgreSQL
+docker compose up -d postgres
+
+# 3. Arrancar la API (migra el esquema con Flyway al arrancar)
 ./mvnw spring-boot:run
+
+# 4. Comprobar que esta sana
+curl http://localhost:8080/actuator/health   # {"status":"UP", ...}
+
+# 5. Abrir la documentacion interactiva
+open http://localhost:8080/swagger-ui.html
 ```
 
-Comprobar salud:
+Con Docker en vez de Maven:
 
 ```bash
-curl http://localhost:8080/actuator/health
-# {"groups":["liveness","readiness"],"status":"UP"}
+docker compose --profile api up -d --build
 ```
-
-El puerto `5432` de PostgreSQL se publica en el host para facilitar el acceso con `psql`.
-Si ya tienes un PostgreSQL local, cambia el mapeo en `docker-compose.yml`.
 
 ## Pruebas
 
 ```bash
-./mvnw test
-./mvnw verify
+./mvnw test        # suite completa
+./mvnw verify      # suite completa + verificacion
 ```
 
-Los tests de integracion levantan PostgreSQL 18 con Testcontainers, asi que necesitan un
-Docker en ejecucion. Con Colima, ademas del `colima start`, el socket no esta en la ruta
-por defecto; exporta estas variables antes de lanzar Maven:
+Los tests de integración levantan **PostgreSQL 18 real** con Testcontainers: no se usa
+H2, para que el dialecto SQL sea el mismo que en producción. Requieren Docker en
+ejecución.
+
+| Suite | Qué cubre |
+|---|---|
+| `AuthControllerIntegrationTest` | Registro, login, validación de tokens, enumeración de cuentas |
+| `DevTrackPropertiesTest` | *Fail-fast* del secreto JWT |
+| `ProjectControllerIntegrationTest` | CRUD de proyectos, 404 indistinguible, archivado |
+| `ProjectMemberControllerIntegrationTest` | Membresía, roles, transferencia de propiedad |
+| `ProjectAuthorizationMatrixTest` | **Matriz completa rol × operación** (138 casos) |
+| `TaskControllerIntegrationTest` | CRUD de tareas, filtros, transiciones, asignación |
+| `TaskStatusPolicyTest` | Los 16 pares de la máquina de estados |
+| `TaskConcurrencyTest` | Conflicto de *locking* optimista (409) |
+
+## Autenticación y uso
+
+La API es **stateless**: se autentica con un token JWT en la cabecera
+`Authorization: Bearer <token>`, válido 15 minutos.
 
 ```bash
-export JAVA_HOME=/opt/homebrew/opt/openjdk@21
-export DOCKER_HOST="unix://$HOME/.colima/default/docker.sock"
-export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
-./mvnw verify
+# Registrar
+curl -sX POST http://localhost:8080/api/v1/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"ada@devtrack.dev","password":"Str0ng-Passphrase!","fullName":"Ada Lovelace"}'
+
+# Iniciar sesión
+TOKEN=$(curl -sX POST http://localhost:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"ada@devtrack.dev","password":"Str0ng-Passphrase!"}' | jq -r .accessToken)
+
+# Crear un proyecto (el creator se convierte en OWNER)
+curl -sX POST http://localhost:8080/api/v1/projects \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"name":"DevTrack v1","description":"API de gestión de proyectos"}'
+
+# Crear una tarea
+curl -sX POST http://localhost:8080/api/v1/projects/1/tasks \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"title":"Primera tarea","priority":"HIGH","dueDate":"2026-12-31"}'
 ```
 
-Sin `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE`, Ryuk no puede montar el socket y los tests
-fallan al arrancar el contenedor. Los tests actuales cubren autenticacion (incluido el
-rechazo de tokens de cuentas deshabilitadas), el contrato de proyectos/membresias, la
-matriz completa de autorizacion por rol, las transiciones de estado de tareas y el
-conflicto de locking optimista (409).
+## Autorización
 
-## Documentacion
+El rol se define **dentro de cada proyecto**, no de forma global:
 
-- [Arquitectura](docs/architecture.md) (propuesta, pendiente de aprobacion final)
-- [Backlog del Agente 2](docs/tasks-agent2.md)
-- [Contrato de API](docs/api-plan.md)
+| Operación | VIEWER | EDITOR | OWNER |
+|---|:---:|:---:|:---:|
+| Leer proyecto, miembros y tareas | ✅ | ✅ | ✅ |
+| Crear, editar, reasignar tareas | ❌ | ✅ | ✅ |
+| Eliminar una tarea creada por otro | ❌ | ❌ | ✅ |
+| Editar o archivar el proyecto | ❌ | ❌ | ✅ |
+| Gestionar los miembros del proyecto | ❌ | ❌ | ✅ |
+| Transferir la propiedad del proyecto | ❌ | ❌ | ✅ |
+
+- Un usuario que **no es miembro** recibe **404**, no 403: la respuesta no revela si el
+  recurso existe.
+- Un miembro con **rol insuficiente** recibe **403**.
+- Conocer un `projectId` o un `taskId` **no** da acceso a nada.
+
+Detalle: [`ADR-0004`](docs/adr/0004-autorizacion-por-membresia.md).
+
+## Contrato de errores
+
+Todos los errores son `application/problem+json` (RFC 7807) con un campo `code` estable:
+
+```json
+{
+  "type": "https://devtrack.dev/problems/project-not-found",
+  "title": "Proyecto no encontrado",
+  "status": 404,
+  "detail": "No existe un proyecto con id 42",
+  "instance": "/api/v1/projects/42",
+  "code": "PROJECT_NOT_FOUND",
+  "timestamp": "2026-10-21T14:30:00.000Z"
+}
+```
+
+Catálogo completo: [`docs/api-plan.md`](docs/api-plan.md) §2.
+
+## Estructura del proyecto
+
+```
+devtrack/
+├── pom.xml
+├── Dockerfile                 multi-stage: JDK 21 + JRE 21, usuario no root
+├── docker-compose.yml         PostgreSQL 18 + servicio opcional de la API
+├── .github/workflows/ci.yml   build + tests + verificación del esquema
+├── docs/
+│   ├── architecture.md        requisitos, modelo, seguridad, riesgos, sprints
+│   ├── api-plan.md            contrato HTTP completo
+│   ├── tasks-agent2.md        plan de trabajo con criterios de aceptación
+│   └── adr/                   decisiones arquitectónicas
+└── src/
+    ├── main/java/com/devtrack/
+    │   ├── shared/            config · exception · persistence · security · web
+    │   ├── user/              api · domain · repository · service
+    │   ├── project/           api · domain · repository · service
+    │   └── task/              api · domain · repository · service
+    ├── main/resources/
+    │   ├── application.yml    configuración externalizada
+    │   └── db/migration/      V1__users, V2__projects_and_members, V3__tasks
+    └── test/java/com/devtrack/
+        ├── support/           base de pruebas con Testcontainers
+        ├── security/          matriz de autorización
+        └── * /                tests de cada contexto
+```
+
+La organización es **por funcionalidad** (*package-by-feature*), no por tipo técnico: los
+contextos `user`, `project` y `task` dependen en un solo sentido y comparten `shared` para
+lo transversal. Ver [`ADR-0001`](docs/adr/0001-monolito-modular-package-by-feature.md).
+
+## Decisiones de diseño
+
+| ADR | Decisión |
+|---|---|
+| [0001](docs/adr/0001-monolito-modular-package-by-feature.md) | Monolito modular *package-by-feature* (sin Spring Modulith) |
+| [0002](docs/adr/0002-stack-y-versiones.md) | Spring Boot 4.1.1 sobre Java 21 |
+| [0003](docs/adr/0003-autenticacion-jwt-bcrypt.md) | JWT stateless con HS256 y contraseñas con BCrypt |
+| [0004](docs/adr/0004-autorizacion-por-membresia.md) | Autorización por membresía; 404 para no-miembros |
+| [0005](docs/adr/0005-contrato-de-errores.md) | `ProblemDetail` (RFC 7807) con código de negocio estable |
+| [0006](docs/adr/0006-flyway-y-borrado-logico.md) | Flyway gobierna el esquema; borrado lógico de proyectos |
+
+Aspectos destacados:
+
+- **Ninguna entidad JPA se expone** en la API: todo pasa por DTOs.
+- **El esquema solo lo crea Flyway**; Hibernate valida (`ddl-auto=validate`), de modo que
+  la deriva entre entidad y esquema impide arrancar.
+- **El esquema se versiona** y una migración aplicada no se edita nunca.
+- **Transacciones en la capa de servicio**; los controladores no tienen lógica de negocio.
+- **Locking optimista** en las tareas: dos ediciones simultáneas no se pisan, la segunda
+  recibe un 409.
+- **El JWT no lleva los roles de proyecto**: cambian con frecuencia y obligarían a
+  reemitir tokens; se resuelven siempre contra la base de datos.
+- **La cuenta deshabilitada se comprueba en cada petición**, no solo al iniciar sesión.
+
+## Documentación
+
+| Documento | Contenido |
+|---|---|
+| [`docs/architecture.md`](docs/architecture.md) | Requisitos, supuestos, estructura, modelo de datos, seguridad, riesgos, sprints y divergencias |
+| [`docs/api-plan.md`](docs/api-plan.md) | Contrato HTTP completo: rutas, cuerpos, códigos, catálogo de errores |
+| [`docs/tasks-agent2.md`](docs/tasks-agent2.md) | Plan de trabajo con tareas, criterios de aceptación y pruebas |
+| [`docs/adr/`](docs/adr/) | Decisiones arquitectónicas con contexto, alternativas y consecuencias |
+
+## Qué no incluye esta versión
+
+Queda fuera del alcance de la v1, ya planificado:
+
+- **Autenticación**: refresh tokens, OAuth2/SSO, verificación de email, recuperación de
+  contraseña, MFA.
+- **Seguridad**: rate limiting, cabeceras de seguridad a nivel de proxy, auditoría de
+  accesos, rotación de claves.
+- **Funcionalidad**: comentarios, historial de actividad, métricas de progreso, búsqueda
+  de texto completo, notificaciones, multi-tenantidad, internacionalización.
+
+## Licencia
+
+Por definir.

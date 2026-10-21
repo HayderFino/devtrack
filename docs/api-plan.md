@@ -110,7 +110,8 @@ Todos los errores usan `application/problem+json`.
 | `INTERNAL_ERROR` | 500 | Fallo no previsto (mensaje genérico, detalle en logs) |
 
 > El `detail` de un 404 **no distingue** entre "no existe" y "no tienes permiso": ambos
-> devuelven el mismo texto. Esto es deliberado (R-01).
+> devuelven **exactamente el mismo texto** ("El proyecto no existe o no tienes acceso").
+> Esto es deliberado (R-01) y hay un test que compara ambos cuerpos.
 
 ---
 

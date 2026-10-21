@@ -2,6 +2,8 @@ package com.devtrack.project.api.dto;
 
 import java.time.Instant;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import com.devtrack.project.domain.Project;
 import com.devtrack.project.domain.ProjectRole;
 
@@ -22,15 +24,15 @@ import com.devtrack.project.domain.ProjectRole;
  * @param updatedAt fecha de la ultima modificacion
  */
 public record ProjectResponse(
-        Long id,
-        String name,
-        String description,
-        Long ownerId,
-        boolean archived,
-        ProjectRole role,
-        long memberCount,
-        Instant createdAt,
-        Instant updatedAt) {
+        @Schema(description = "Identificador del proyecto", example = "1") Long id,
+        @Schema(description = "Nombre visible", example = "Lanzamiento v1") String name,
+        @Schema(description = "Descripcion", example = "Plan de lanzamiento") String description,
+        @Schema(description = "Usuario propietario", example = "7") Long ownerId,
+        @Schema(description = "Si el proyecto esta archivado", example = "false") boolean archived,
+        @Schema(description = "Rol del llamador en este proyecto", example = "OWNER") ProjectRole role,
+        @Schema(description = "Numero de miembros", example = "3") long memberCount,
+        @Schema(description = "Fecha de creacion en UTC", example = "2026-10-21T12:00:00Z") Instant createdAt,
+        @Schema(description = "Fecha de ultima modificacion en UTC", example = "2026-10-21T12:30:00Z") Instant updatedAt) {
 
     public static ProjectResponse from(Project project, ProjectRole role, long memberCount) {
         return new ProjectResponse(

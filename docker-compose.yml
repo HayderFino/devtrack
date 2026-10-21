@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ${DB_USERNAME:-devtrack}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-devtrack}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - devtrack-postgres-data:/var/lib/postgresql
     healthcheck:
@@ -15,6 +15,37 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  # Servicio de la API. Se arranca con: docker compose --profile api up -d
+  # Sin el perfil, `docker compose up -d` levanta solo PostgreSQL, que es lo que se usa
+  # para desarrollo con la aplicacion ejecutandose desde el IDE o con ./mvnw.
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devtrack-api
+    profiles: ["api"]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-devtrack}
+      DB_USERNAME: ${DB_USERNAME:-devtrack}
+      DB_PASSWORD: ${DB_PASSWORD:-devtrack}
+      # El secreto llega desde el entorno; nunca se hornea en la imagen.
+      # Si se deja vacio, la aplicacion NO arranca (fail-fast, ADR-0003): es preferible
+      # a arrancar con un secreto inseguro por defecto.
+      DEVTRACK_JWT_SECRET: ${DEVTRACK_JWT_SECRET:-}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
 
 volumes:
   devtrack-postgres-data:
