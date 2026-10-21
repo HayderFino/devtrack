@@ -889,6 +889,7 @@ implementándose, con su motivo. Ninguna afecta al contrato público salvo donde
 | 7 | Verificación de `enabled` solo en el login | Comprobado en **cada** petición | Para que deshabilitar una cuenta surta efecto inmediato, no 15 minutos después. |
 | 8 | `DONE → TODO` prohibida | Se mantiene | Coherente con ADR-0004 y la máquina de estados de §4.4. |
 | 9 | Spring Modulith como opción | **No adoptado** | Decisión del usuario: la convención de paquetes es suficiente. |
+| 10 | Métricas de progreso en fase posterior | Implementadas en la v1 (`GET /projects/{id}/stats`) | Se calculan con agregaciones sobre `tasks`, sin estado adicional ni migración nueva. El controlador vive en el contexto `task` para no romper la regla R-D4. |
 
 ### Hallazgos técnicos de Spring Boot 4 y Testcontainers 2.x
 

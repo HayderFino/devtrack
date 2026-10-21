@@ -557,6 +557,42 @@ Campos actualizables: `title`, `description`, `status`, `priority`, `dueDate`.
 **Autenticado.** `?assignedToMe=true&status=&page=&size=`. Se deja fuera de la v1 pero la ruta
 se reserva para la fase de métricas.
 
+
+### 6.8 `GET /api/v1/projects/{projectId}/stats` — Métricas de progreso
+
+**Autenticado + miembro del proyecto** (cualquier rol, incluido `VIEWER`).
+
+**200 OK**
+
+```json
+{
+  "projectId": 10,
+  "totalTasks": 57,
+  "byStatus": { "TODO": 20, "IN_PROGRESS": 5, "DONE": 30, "CANCELLED": 2 },
+  "byPriority": { "LOW": 10, "MEDIUM": 25, "HIGH": 18, "URGENT": 4 },
+  "unassigned": 7,
+  "assignedToMe": 4,
+  "overdue": 3,
+  "dueWithinNext7Days": 6,
+  "completionRate": 0.53
+}
+```
+
+| Campo | Significado |
+|---|---|
+| `byStatus` / `byPriority` | Recuento por estado y por prioridad. **Incluyen todos los valores**, aunque valgan 0, para que el cliente pueda pintar la matriz completa sin tratar los nulos. |
+| `unassigned` | Tareas sin assigned. |
+| `assignedToMe` | Tareas asignadas al llamador. |
+| `overdue` | Tareas con fecha límite pasada que **no** están `DONE`. |
+| `dueWithinNext7Days` | Tareas que vencen hoy o en los próximos 7 días. |
+| `completionRate` | Proporción de tareas `DONE` sobre el total, en el intervalo **[0,1]** con dos decimales. `0.53` significa 53 %. Con 0 tareas devuelve `0`. |
+
+**Errores:** `401`, `404 PROJECT_NOT_FOUND`.
+
+> El endpoint vive en el contexto `task` porque las métricas se calculan sobre tareas. El
+> contexto `project` no conoce al `task` y la dependencia entre contextos es unidireccional
+> (regla R-D4 de ADR-0001).
+
 ---
 
 ## 7. Resumen de la superficie de la v1
@@ -582,10 +618,11 @@ se reserva para la fase de métricas.
 | 17 | PATCH | `/api/v1/projects/{projectId}/tasks/{taskId}` | `EDITOR` | 200 |
 | 18 | PUT | `/api/v1/projects/{projectId}/tasks/{taskId}/assignee` | `EDITOR` | 200 |
 | 19 | DELETE | `/api/v1/projects/{projectId}/tasks/{taskId}` | `OWNER` o `EDITOR` creador | 204 |
+| 20 | GET | `/api/v1/projects/{projectId}/stats` | miembro (lectura) | 200 |
 
 **Endpoints fuera de la v1 (reservados):** `GET /api/v1/users` (ADMIN),
 `GET /api/v1/tasks` (cross-proyecto), `/api/v1/projects/{id}/comments`,
-`/api/v1/projects/{id}/activity`, `/api/v1/projects/{id}/metrics`.
+`/api/v1/projects/{id}/activity`.
 
 ---
 
@@ -699,3 +736,4 @@ Recogidas durante la implementación. La propuesta original de este documento er
 | 7 | Cuatro migraciones | Tres (`V1` usuarios, `V2` proyectos y miembros, `V3` tareas) | Una migración por grupo de tablas; sin migraciones de relleno. |
 | 8 | `GET /projects/{id}/tasks/{taskId}` → siempre `TASK_NOT_FOUND` | `PROJECT_NOT_FOUND` si no se es miembro; `TASK_NOT_FOUND` si se es miembro y la tarea no está en ese proyecto | El proyecto es la frontera de autorización: si no eres miembro, no se revela ni el proyecto ni sus tareas. |
 | 9 | `GET /projects/{id}/members` con envoltura de paginación | Devuelve un **array plano** (`List<ProjectMemberResponse>`) | El equipo de un proyecto se sirve completo: paginarlo no aporta nada y complica el cliente. Corregido tras revisar el código y los tests. |
+| 10 | Métricas de progreso en fase posterior | `GET /projects/{id}/stats` implementado en la v1 | Es la consulta que más aporta para el seguimiento del trabajo y no requiere estado adicional: se calcula con agregaciones sobre `tasks`. |
