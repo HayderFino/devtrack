@@ -2,9 +2,10 @@
 
 API REST para gestion de proyectos y tareas. Monolito modular con Spring Boot.
 
-**Estado:** Sprint 0 en construccion. Ya estan implementados el registro/login con JWT,
-`GET /api/v1/users/me` y los endpoints de proyectos y membresias. El CRUD de tareas
-(`/api/v1/projects/{projectId}/tasks`) sigue pendiente.
+**Estado:** Sprints 0-3 completados. Ya estan implementados el registro/login con JWT,
+`GET /api/v1/users/me`, los endpoints de proyectos y membresias, y el CRUD de tareas
+(`/api/v1/projects/{projectId}/tasks`) con filtros, maquina de estados y locking optimista.
+Queda pendiente el Sprint 4 (OpenAPI, Docker, CI, hardening y documentacion final).
 
 ## Stack
 
@@ -66,7 +67,9 @@ export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
 
 Sin `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE`, Ryuk no puede montar el socket y los tests
 fallan al arrancar el contenedor. Los tests actuales cubren autenticacion (incluido el
-rechazo de tokens de cuentas deshabilitadas) y el contrato de proyectos/membresias.
+rechazo de tokens de cuentas deshabilitadas), el contrato de proyectos/membresias, la
+matriz completa de autorizacion por rol, las transiciones de estado de tareas y el
+conflicto de locking optimista (409).
 
 ## Documentacion
 

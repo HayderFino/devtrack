@@ -155,6 +155,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(ErrorCode.MALFORMED_JSON.status()).body(problem);
     }
 
+    /**
+     * Valor de parametro no convertible (por ejemplo, un estado de tarea que no existe):
+     * 400 con el codigo de negocio, no el 500 generico.
+     */
+    @Override
+    protected ResponseEntity<Object> handleTypeMismatch(
+            org.springframework.beans.TypeMismatchException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request) {
+
+        String detail = ex.getPropertyName() == null
+                ? "Uno de los parametros de la peticion no tiene un valor valido"
+                : "El valor del parametro '" + ex.getPropertyName() + "' no es valido";
+        ProblemDetail problem = ProblemDetails.of(ErrorCode.INVALID_PARAMETER, detail, pathOf(request));
+        return ResponseEntity.status(ErrorCode.INVALID_PARAMETER.status()).body(problem);
+    }
+
     private static FieldViolation toViolation(FieldError error) {
         return new FieldViolation(error.getField(), error.getDefaultMessage(), error.getRejectedValue());
     }

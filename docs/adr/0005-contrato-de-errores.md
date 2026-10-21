@@ -1,6 +1,6 @@
 # ADR-0005 · Contrato de errores: `ProblemDetail` (RFC 7807) con código de negocio estable
 
-- **Estado:** PROPUESTO — pendiente de aprobación
+- **Estado:** **Aceptado** (2026-10-21)
 - **Fecha:** 2026-10-21
 - **Decide sobre:** formato de las respuestas de error
 - **Relacionado:** `docs/architecture.md` §7 (punto 7 de `api-plan.md`), `docs/api-plan.md` §1.2, §2
@@ -127,3 +127,17 @@ propia `code` y un catálogo centralizado.**
 
 En la fase `F3-FEAT`, si se introduce i18n: habrá que decidir si `detail` se externaliza a
 un bundle de mensajes o se mantiene fijo y solo se traduce `title`.
+
+## Resultado de la implementacion
+
+- **Aceptado**: `ProblemDetail` (RFC 7807) con `code` estable, en toda la API.
+- Los 401 y 403 generados **dentro de la cadena de filtros** se resuelven con
+  `RestAuthenticationEntryPoint` y `RestAccessDeniedHandler`, que escriben el mismo
+  `ProblemDetail` que el advice. **Riesgo R-06 verificado**: los cuerpos de 401 y 403
+  tienen exactamente la misma forma que los del resto de errores, y hay tests que lo
+  comprueban campo a campo.
+- Mejora: las violaciones de integridad de la base de datos se **clasifican por el
+  nombre de la restriccion** (`uq_project_members` → `MEMBER_ALREADY_EXISTS`,
+  `uq_users_email` → `EMAIL_ALREADY_REGISTERED`) en lugar de devolver un 409 generico.
+- Se anadio `handleTypeMismatch` para que un valor de query invalido (por ejemplo
+  `?status=NO_EXISTE`) devuelva **400 `INVALID_PARAMETER`** y no un 500.

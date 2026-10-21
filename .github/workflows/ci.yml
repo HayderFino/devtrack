@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build y pruebas
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Descargar el codigo
+        uses: actions/checkout@v4
+
+      - name: Instalar JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Crear el secreto de JWT para los tests
+        # Se genera un valor aleatorio efimero: los tests no necesitan un secreto estable.
+        run: echo "DEVTRACK_JWT_SECRET=$(head -c 48 /dev/urandom | base64 | tr -d '\n')" >> "$GITHUB_ENV"
+
+      - name: Levantar PostgreSQL 18
+        run: |
+          docker run -d --name devtrack-ci-postgres \
+            -e POSTGRES_DB=devtrack \
+            -e POSTGRES_USER=devtrack \
+            -e POSTGRES_PASSWORD=devtrack \
+            -p 5432:5432 \
+            postgres:18-alpine
+          for i in $(seq 1 30); do
+            if docker exec devtrack-ci-postgres pg_isready -U devtrack -d devtrack >/dev/null 2>&1; then
+              echo "PostgreSQL listo"
+              break
+            fi
+            sleep 1
+          done
+          docker exec devtrack-ci-postgres pg_isready -U devtrack -d devtrack
+
+      - name: Construir y verificar
+        run: ./mvnw --batch-mode clean verify
+
+      - name: Comprobar que el esquema se genera desde cero
+        # Las migraciones de Flyway son la unica fuente del esquema (ADR-0006).
+        run: |
+          docker exec devtrack-ci-postgres psql -U devtrack -d devtrack -c '\dt' | grep -E 'users|projects|project_members|tasks'
+
+      - name: Subir el informe de pruebas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 7
+
+      - name: Limpiar el contenedor
+        if: always()
+        run: docker rm -f devtrack-ci-postgres || true

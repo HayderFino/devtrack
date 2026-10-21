@@ -107,13 +107,14 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-        <!-- Limites de modulos (aprobado por el usuario, Q-05) -->
+        <!-- Test: el starter generico aporta JUnit 5 (con parametros), AssertJ, Mockito y
+             JSONassert. Los starters especificos de Boot 4 anaden el soporte de slice test
+             (MockMvc, Testcontainers, seguridad) pero NO traen JUnit. -->
         <dependency>
-            <groupId>org.springframework.modulith</groupId>
-            <artifactId>spring-modulith-starter-core</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
-
-        <!-- Test: starters especificos de Spring Boot 4 (el generico viene por transitividad) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc-test</artifactId>
@@ -149,11 +150,6 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.modulith</groupId>
-            <artifactId>spring-modulith-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

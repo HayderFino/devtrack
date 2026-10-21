@@ -1,6 +1,7 @@
 # DevTrack — Plan de API REST (propuesta inicial)
 
-> **Estado:** PROPUESTA — pendiente de aprobación.
+> **Estado:** Implementado. Refleja el contrato real; las divergencias respecto a la
+> propuesta inicial están recogidas en §12.
 > Base: `/api/v1`. Formato: `application/json;charset=UTF-8`. OpenAPI 3.1 (springdoc).
 > Referencia: `docs/architecture.md` §3 (paquetes), §4 (modelo), §5 (seguridad).
 
@@ -42,7 +43,7 @@ Todos los errores usan `application/problem+json`.
   "type": "https://devtrack.dev/problems/resource-not-found",
   "title": "Recurso no encontrado",
   "status": 404,
-  "detail": "No existe un proyecto con id 42",
+  "detail": "El proyecto no existe o no tienes acceso",
   "instance": "/api/v1/projects/42",
   "code": "PROJECT_NOT_FOUND",
   "timestamp": "2026-10-21T14:30:00.000Z",
@@ -118,6 +119,7 @@ Todos los errores usan `application/problem+json`.
 ### 3.1 `POST /api/v1/auth/register` — Registrar usuario
 
 **Público.** Crea la cuenta y devuelve el perfil (sin token: el cliente hace login después).
+**No** lleva cabecera `Location`: el recurso creado se consulta en `/api/v1/users/me`.
 
 **Request**
 
@@ -227,15 +229,18 @@ la ruta.
   "archived": false,
   "role": "OWNER",
   "memberCount": 1,
-  "taskCount": 0,
   "createdAt": "2026-10-21T14:10:00.000Z",
   "updatedAt": "2026-10-21T14:10:00.000Z"
 }
 ```
 
 > `role` es el rol **del llamador** en ese proyecto. Permite al cliente pintar la UI sin
-> segunda llamada. `memberCount` y `taskCount` son contadores desnormalizados en la respuesta
-> (calculados en la query, no persistidos).
+> segunda llamada. `memberCount` se calcula con una única consulta agregada para todos los
+> proyectos de la página (sin N+1).
+>
+> **No incluye `taskCount`**: calcularlo exigiría que el contexto `project` conociera al
+> contexto `task`, rompiendo la dependencia unidireccional entre contextos (ADR-0001,
+> regla R-D4). El número de tareas se expone desde el contexto `task`.
 
 **Errores:** `400`, `401`.
 
@@ -486,7 +491,12 @@ De este modo nunca hay cero ni dos owners.
 
 **200 OK** → `TaskResponse`.
 
-**Errores:** `401`, `404 TASK_NOT_FOUND`.
+**Errores:** `401`, `404`.
+
+> Dos 404 posibles, con mensajes distintos:
+> - `PROJECT_NOT_FOUND` — el llamador **no es miembro** del proyecto (o el proyecto no existe).
+> - `TASK_NOT_FOUND` — el llamador **es miembro**, pero no existe una tarea con ese id en ese
+>   proyecto (tarea de otro proyecto, o inexistente).
 
 ### 6.4 `PATCH /api/v1/projects/{projectId}/tasks/{taskId}` — Actualizar tarea
 
@@ -540,6 +550,9 @@ Campos actualizables: `title`, `description`, `status`, `priority`, `dueDate`.
 **204 No Content.**
 
 **Errores:** `401`, `403`, `404`, `422 TASK_DELETION_NOT_ALLOWED`.
+
+> Un `VIEWER` recibe **403** (rol insuficiente). Un `EDITOR` que no creó la tarea recibe
+> **422** (no tiene permiso para *esa* tarea).
 
 ### 6.7 `GET /api/v1/tasks` — Mis tareas (cross-proyecto) *(fase posterior)*
 
@@ -668,3 +681,22 @@ Antes de dar por terminada una tarea de API, verificar:
 - [ ] Las mutaciones que dependen del estado (transiciones) devuelven `422` si no aplican.
 - [ ] El endpoint está anotado para OpenAPI (`@Operation`, `@ApiResponse`).
 - [ ] Existe un test de integración que ejercita el endpoint **con y sin** token.
+
+
+---
+
+## 12. Divergencias respecto a la propuesta inicial
+
+Recogidas durante la implementación. La propuesta original de este documento era
+`PROPUESTA`; lo que hay es lo **implementado y verificado con tests**.
+
+| # | Propuesta original | Implementación real | Motivo |
+|---|---|---|---|
+| 1 | `ProjectResponse` con `taskCount` | Sin `taskCount` | El contexto `project` no puede conocer al `task` (regla R-D4 de ADR-0001). El contador se expone desde el contexto `task`. |
+| 2 | `POST /auth/register` con cabecera `Location` | Sin `Location` | El recurso creado se lee en `/api/v1/users/me`, no en `/api/v1/users/{id}` (ruta que no existe en la v1). `Location` sí se emite en `POST /projects` y `POST /tasks`, donde sí hay ruta de lectura. |
+| 3 | `PATCH /projects/{id}/tasks/{taskId}` con `422` en toda transición inválida | `422` solo si la transición es **inválida**; el mismo estado es un *no-op* `200` | Un no-op no es un error: reenviar el mismo estado no debe fallar. |
+| 4 | `size` máximo 100 recortado en silencio | `size` fuera de 1..100 devuelve **400** | Un recorte silencioso hace que el cliente crea que su peticion se atendió como pidió. Verificado con `PageSizeInterceptor`. |
+| 5 | Rol de proyecto en el DTO como enum propio (`ProjectRoleRequest`) | `ProjectRoleRequest` para miembros (excluye `OWNER`); enums de dominio directamente en los DTOs de tarea | En tareas no hay que excluir ningún valor, así que un enum espejo solo añadiría ruido de conversión. |
+| 6 | `project_members.added_at` | `created_at` / `updated_at` | Uniformidad: todas las tablas extienden `BaseEntity`. El DTO sigue exponiendo `addedAt`. |
+| 7 | Cuatro migraciones | Tres (`V1` usuarios, `V2` proyectos y miembros, `V3` tareas) | Una migración por grupo de tablas; sin migraciones de relleno. |
+| 8 | `GET /projects/{id}/tasks/{taskId}` → siempre `TASK_NOT_FOUND` | `PROJECT_NOT_FOUND` si no se es miembro; `TASK_NOT_FOUND` si se es miembro y la tarea no está en ese proyecto | El proyecto es la frontera de autorización: si no eres miembro, no se revela ni el proyecto ni sus tareas. |

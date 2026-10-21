@@ -45,7 +45,22 @@ public class ProjectAccessGuard {
         return projectMemberRepository
                 .findByProjectIdAndUserId(projectId, caller.userId())
                 .orElseThrow(() -> new ApiException.ResourceNotFound(
-                        ErrorCode.PROJECT_NOT_FOUND, "No existe un proyecto con id " + projectId));
+                        ErrorCode.PROJECT_NOT_FOUND, "El proyecto no existe o no tienes acceso"));
+    }
+
+    /**
+     * Indica si un usuario es miembro del proyecto, sin lanzar excepcion.
+     *
+     * <p>Se usa para validar reglas que no son de autorizacion del llamador, sino de
+     * integridad del dato (por ejemplo, que el asignado de una tarea pertenezca al
+     * proyecto).
+     *
+     * @param projectId identificador del proyecto
+     * @param userId identificador del usuario
+     * @return {@code true} si el usuario es miembro
+     */
+    public boolean isMember(Long projectId, Long userId) {
+        return projectMemberRepository.existsByProjectIdAndUserId(projectId, userId);
     }
 
     /**

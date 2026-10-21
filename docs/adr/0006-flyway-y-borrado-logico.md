@@ -1,6 +1,6 @@
 # ADR-0006 · Esquema gobernado por Flyway, con borrado lógico en proyectos
 
-- **Estado:** PROPUESTO — pendiente de aprobación
+- **Estado:** **Aceptado** (2026-10-21)
 - **Fecha:** 2026-10-21
 - **Decide sobre:** gestión del esquema de base de datos y política de borrado
 - **Relacionado:** `docs/architecture.md` §4.2, §4.3
@@ -138,3 +138,20 @@ Un conflicto produce `OptimisticLockingFailureException` → **409 `OPTIMISTIC_L
 Al iniciar la fase `F2-FEAT` (comentarios e historial de actividad): la tabla de actividad
 heredará parte de estas decisiones (FK `created_by` sin cascada, `version` si aplica) y este
 ADR debe actualizarse.
+
+## Resultado de la implementacion
+
+- **Aceptado**: Flyway gobierna el esquema; `ddl-auto=validate`; borrado logico de
+  proyectos.
+- El esquema quedo en **tres migraciones**, no cuatro: `V1__users.sql`,
+  `V2__projects_and_members.sql` y `V3__tasks.sql`. Una migracion por grupo de tablas
+  en lugar de una por tabla: resultaba mas legible y no dejaba una migracion vacia.
+- **Ajuste**: `project_members` usa `created_at` / `updated_at` (y no `added_at`) para
+  que todas las tablas extiendan `BaseEntity` sin excepciones. El DTO sigue exponiendo
+  `addedAt`, que es el termino de dominio ("momento en que se unio al proyecto").
+- El borrado logico esta implementado: `DELETE /api/v1/projects/{id}` marca
+  `archived = true`, devuelve 204 y el proyecto desaparece del listado activo
+  (`?archived=true` lo muestra).
+- El locking optimista funciona: `tasks.version` con `@Version`; el servicio fuerza el
+  `flush()` para que la respuesta refleje la version persistida, y un conflicto se
+  traduce en **409 `OPTIMISTIC_LOCK_CONFLICT`**.

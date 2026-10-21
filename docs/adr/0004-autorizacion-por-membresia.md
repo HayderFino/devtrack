@@ -1,6 +1,6 @@
 # ADR-0004 · Autorización por membresía de proyecto, con 404 para no-miembros
 
-- **Estado:** PROPUESTO — pendiente de aprobación
+- **Estado:** **Aceptado** (2026-10-21)
 - **Fecha:** 2026-10-21
 - **Decide sobre:** modelo de permisos y traducción de "no autorizado" a código HTTP
 - **Relacionado:** `docs/architecture.md` §5.3
@@ -152,3 +152,17 @@ necesita una acción de soporte explícita y auditada.
 
 Al cerrar el Sprint 3 (tareas T-14 a T-16), con la matriz de permisos ya cubierta por tests.
 Reevaluar RLS de PostgreSQL en la fase `F3-ARCH`.
+
+## Resultado de la implementacion
+
+- **Aceptado**: `ProjectAccessGuard` explicito, fuente de verdad en `project_members`.
+- El 404 para no-miembros usa **la misma plantilla de mensaje** que el 404 de recurso
+  inexistente: `"No existe un proyecto con id " + id`. El unico identificador que
+  aparece es el que pidio el cliente, de modo que la respuesta no revela la existencia
+  del recurso. Hay un test que lo verifica comparando ambos cuerpos.
+- La matriz de permisos esta cubierta por tests **parametrizados** (rol x operacion), de
+  modo que un cambio en la politica rompe la compilacion de las pruebas.
+- **Ajuste detectado durante la implementacion**: el borrado de una tarea usa
+  `requireEditor` y no `requireMember`. Con `requireMember`, un VIEWER que hubiera creado
+  una tarea (imposible hoy, porque solo un EDITOR puede crearla) podria borrarla. Es una
+  defensa en profundidad, no un fallo explotable.

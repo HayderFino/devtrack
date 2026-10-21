@@ -1,6 +1,6 @@
 # ADR-0003 · Autenticación por JWT stateless con BCrypt
 
-- **Estado:** PROPUESTO — pendiente de aprobación
+- **Estado:** **Aceptado** (2026-10-21)
 - **Fecha:** 2026-10-21
 - **Decide sobre:** cómo se autentican los usuarios en la v1
 - **Relacionado:** `docs/architecture.md` §5.1, §5.2
@@ -120,3 +120,19 @@ por defecto.
 ## Fecha de revisión
 
 Al iniciar la fase `F2-AUTH`.
+
+## Resultado de la implementacion
+
+- **Aceptado**: JWT HS256 + BCrypt, sin refresh token en la v1.
+- **Riesgo R-10 resuelto empiricamente**: `jjwt-jackson` depende de Jackson 2 y Spring
+  Boot 4 usa Jackson 3. Ambos conviven en el classpath sin conflicto: no existe artefacto
+  `jjwt-jackson3`, y `jjwt-jackson` es la unica opcion. Hay un test de integracion que
+  emite un token y lo usa en una peticion real, de modo que el arranque se verifica.
+- **Mejora sobre el ADR**: la cuenta deshabilitada se comprueba en **cada peticion**
+  (`existsByIdAndEnabledTrue`), no solo en el login. Sin esto, un token emitido antes de
+  deshabilitar la cuenta seguiria siendo valido hasta 15 minutos. Esto **anade una
+  consulta a la base de datos por peticion**, que es el precio de que la baja de una
+  cuenta surta efecto inmediato.
+- El fail-fast del secreto se implementa en **dos capas**: `@Validated` sobre
+  `DevTrackProperties` (longitud minima de 32 caracteres) y una comprobacion adicional en
+  bytes en el constructor de `JwtService`.

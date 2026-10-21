@@ -1,6 +1,6 @@
 # ADR-0001 · Monolito modular con organización *package-by-feature*
 
-- **Estado:** PROPUESTO — pendiente de aprobación
+- **Estado:** **Aceptado** (2026-10-21)
 - **Fecha:** 2026-10-21
 - **Decide sobre:** arquitectura general del proyecto
 - **Relacionado:** `docs/architecture.md` §3
@@ -117,3 +117,16 @@ Lo que **sí** aporta valor, y se mantiene:
 
 Cuando se complete el Sprint 2 (tareas T-10 a T-13), esta decisión debe revisarse: en ese
 punto las dependencias reales entre features ya son observables y no hipotéticas.
+
+## Resultado de la implementacion
+
+- **Aceptado**: la estructura por funcionalidad se implemento tal y como se propone
+  (`user`, `project`, `task` + `shared`).
+- **Spring Modulith NO se adopto** (decision del usuario el 2026-10-21): la verificacion
+  de limites de modulo se hace por convencion de paquetes y revision, no con la libreria.
+  La dependencia se elimino del `pom.xml` y no se sustituyo por ninguna otra.
+- La dependencia entre contextos es **unidireccional y real**: `task` lee de `project`
+  (para validar que el asignado es miembro) y `project` no conoce `task`.
+- Consecuencia registrada: `ProjectResponse` **no incluye `taskCount`**, porque
+  calcularlo exigiria que `project` conociera a `task` y romperia la regla R-D4. El
+  contador de tareas se expone en el contexto `task`, no en el de `project`.

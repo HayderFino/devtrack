@@ -1,6 +1,6 @@
 # ADR-0002 · Versiones del stack: Spring Boot 4.1.1 sobre Java 21
 
-- **Estado:** PROPUESTO — pendiente de aprobación
+- **Estado:** **Aceptado** (2026-10-21)
 - **Fecha:** 2026-10-21
 - **Decide sobre:** versiones de la plataforma
 - **Relacionado:** `docs/architecture.md` §2
@@ -114,3 +114,41 @@ token real. Si falla, la alternativa es `jjwt-gson` o `jjwt-orgjson`.
 
 Al cerrar el Sprint 4 (T-21): comprobar que Spring Boot 4.2.x o 5.x no estén disponibles con
 una breaking change que afecte al proyecto, y actualizar la fecha de EOL en el README.
+
+## Resultado de la implementacion
+
+Las versiones fijadas se han materialized tal cual. Tres hallazgos surgieron durante la
+implementacion y se documentan aqui:
+
+1. **Testcontainers 2.x renombro sus modulos.** El artefacto es
+   `org.testcontainers:testcontainers-postgresql` (no `postgresql`) y la clase paso al
+   paquete `org.testcontainers.postgresql`. Ademas `PostgreSQLContainer` **ya no es
+   generica** en la 2.x. Los nombres de la 1.x devuelven 404.
+2. **Los starters de test especificos de Spring Boot 4 no traen JUnit.**
+   `spring-boot-starter-webmvc-test` y companhia solo anaden el soporte de slice test; el
+   JUnit 5 (con `junit-jupiter-params`), AssertJ, Mockito y JSONassert vienen de
+   `spring-boot-starter-test`, que debe declararse **ademas** de los especificos.
+3. **`spring-boot-testcontainers` es un modulo aparte**, no lo aporta ningun starter: hay
+   que declararlo explicitamente para usar `@ServiceConnection`.
+
+### Version probada en este entorno
+
+| Componente | Version verificada |
+|---|---|
+| OpenJDK | 21.0.13 (Homebrew) |
+| Docker Engine / Compose | 29.9.2 / 5.6.1 |
+| Colima | 0.10.3 (runtime de Docker en macOS sin Docker Desktop) |
+| PostgreSQL | 18.6 (imagen `postgres:18-alpine`) |
+
+### Nota sobre Ryuk y Colima
+
+Ryuk necesita montar el socket de Docker dentro de su contenedor, y **Colima no permite
+montar sockets unix del host** (`operation not supported`). Opciones aplicadas:
+
+- `~/.testcontainers.properties` con `docker.host=unix://<ruta al socket de colima>`
+  (ruta **absoluta**: Java no expande variables en los ficheros de properties).
+- `TESTCONTAINERS_RYUK_DISABLED=true` en el entorno. En la 2.x el flag **solo** existe
+  como variable de entorno: no hay propiedad `ryuk.disabled`.
+
+Los contenedores los limpia Testcontainers al cerrar el contexto de Spring
+(`GenericContainer.stop()` los elimina), de modo que no se acumulan.

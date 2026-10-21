@@ -1,6 +1,8 @@
 # DevTrack — Arquitectura (propuesta inicial)
 
-> **Estado:** PROPUESTA — pendiente de aprobación del usuario.
+> **Estado:** **Aceptado** (2026-10-21). Los ADR están aceptados y el documento refleja
+> el diseño implementado. Las divergencias detectadas durante la implementación están
+> recogidas en §13.
 > **Autor:** Agente 1 (Arquitectura / Revisión técnica).
 > **Fecha:** 2026-10-21.
 > Este documento describe lo que se **propone**. Las decisiones marcadas con `PROPUESTO` en
@@ -867,3 +869,34 @@ springdoc:
 | R-10 Docker Compose | S0, S4 | T-02, T-18 |
 | R-11 Git + CI | S0, S4 | T-01, T-19 |
 | R-12 Comentarios / historial / métricas | **Fase 2** | — |
+
+
+---
+
+## 13. Divergencias detectadas durante la implementación
+
+Registro de las diferencias entre el diseño de este documento y lo que acabó
+implementándose, con su motivo. Ninguna afecta al contrato público salvo donde se indica.
+
+| # | Diseño original | Implementación | Motivo |
+|---|---|---|---|
+| 1 | `ProjectResponse` con `taskCount` | Sin `taskCount` | El contexto `project` no puede conocer al `task` (regla R-D4). |
+| 2 | `project_members.added_at` | `created_at` / `updated_at` | Uniformidad con `BaseEntity`. El DTO expone `addedAt`. |
+| 3 | Cuatro migraciones | Tres | Una por grupo de tablas, sin migraciones de relleno. |
+| 4 | `size` máximo 100 recortado en silencio | `400` explícito | Un recorte silencioso engaña al cliente. |
+| 5 | `spring-boot-starter-test` | Se declara **además** de los starters de test específicos de Boot 4 | Los starters específicos no aportan JUnit 5 ni sus módulos (incluido `junit-jupiter-params`). |
+| 6 | `POST /auth/register` con `Location` | Sin `Location` | No existe ruta de lectura por identificador de usuario en la v1. |
+| 7 | Verificación de `enabled` solo en el login | Comprobado en **cada** petición | Para que deshabilitar una cuenta surta efecto inmediato, no 15 minutos después. |
+| 8 | `DONE → TODO` prohibida | Se mantiene | Coherente con ADR-0004 y la máquina de estados de §4.4. |
+| 9 | Spring Modulith como opción | **No adoptado** | Decisión del usuario: la convención de paquetes es suficiente. |
+
+### Hallazgos técnicos de Spring Boot 4 y Testcontainers 2.x
+
+Documentados en ADR-0002; en resumen:
+
+- `spring-boot-starter-web` → `spring-boot-starter-webmvc`; `spring-boot-starter-json` → `spring-boot-starter-jackson` (Jackson 3).
+- `@MockBean` / `@SpyBean` → `@MockitoBean` / `@MockitoSpyBean`.
+- `flyway-core` pelado → `spring-boot-starter-flyway` + `flyway-database-postgresql`.
+- `spring-boot-testcontainers` es un módulo aparte: hay que declararlo para usar `@ServiceConnection`.
+- Testcontainers 2.x renombró sus módulos (`testcontainers-postgresql`) y `PostgreSQLContainer` ya no es genérica.
+- Spring Security 7 deprecó `AccessDeniedException` en favor de `AuthorizationDeniedException`; se cubren ambas.

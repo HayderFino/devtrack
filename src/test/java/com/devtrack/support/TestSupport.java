@@ -110,6 +110,24 @@ public final class TestSupport {
                 .andExpect(header().string("Location", startsWith("/api/v1/projects/" + projectId + "/members/")));
     }
 
+    /** Crea una tarea en el proyecto y devuelve su identificador. */
+    public static Long createTask(MockMvc mockMvc, String token, Long projectId, String title) throws Exception {
+        return createTaskWithBody(mockMvc, token, projectId, "{\"title\":\"%s\"}".formatted(title));
+    }
+
+    /** Crea una tarea con el cuerpo JSON indicado y devuelve su identificador. */
+    public static Long createTaskWithBody(MockMvc mockMvc, String token, Long projectId, String body) throws Exception {
+        String response = mockMvc.perform(post("/api/v1/projects/{projectId}/tasks", projectId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        return ((Number) JsonPath.read(response, "$.id")).longValue();
+    }
+
     /** Email aleatorio, para que los tests no dependan del estado de la base de datos. */
     public static String uniqueEmail() {
         return "user-" + UUID.randomUUID() + "@devtrack.test";
