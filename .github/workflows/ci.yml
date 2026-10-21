@@ -17,18 +17,22 @@ jobs:
 
     steps:
       - name: Descargar el codigo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Instalar JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
           cache: maven
 
       - name: Crear el secreto de JWT para los tests
-        # Se genera un valor aleatorio efimero: los tests no necesitan un secreto estable.
-        run: echo "DEVTRACK_JWT_SECRET=$(head -c 48 /dev/urandom | base64 | tr -d '\n')" >> "$GITHUB_ENV"
+        # Se genera un valor aleatorio efimero y se enmascara: los tests no necesitan un
+        # secreto estable, pero no debe aparecer en el log de una ejecucion publica.
+        run: |
+          SECRET="$(head -c 48 /dev/urandom | base64 | tr -d '\n')"
+          echo "::add-mask::$SECRET"
+          echo "DEVTRACK_JWT_SECRET=$SECRET" >> "$GITHUB_ENV"
 
       - name: Levantar PostgreSQL 18
         run: |
@@ -48,16 +52,40 @@ jobs:
           docker exec devtrack-ci-postgres pg_isready -U devtrack -d devtrack
 
       - name: Construir y verificar
-        run: ./mvnw --batch-mode clean verify
+        # Suite completa. Los tests de integracion levantan su propio PostgreSQL con
+        # Testcontainers, asi que no dependen del contenedor de este job.
+        run: ./mvnw --batch-mode --no-transfer-progress clean verify
 
-      - name: Comprobar que el esquema se genera desde cero
-        # Las migraciones de Flyway son la unica fuente del esquema (ADR-0006).
+      - name: Arrancar el jar y verificar el esquema migrado
+        # Comprueba el camino real de produccion: el artefacto empaquetado, contra una base
+        # de datos limpia, aplica las migraciones de Flyway y expone el endpoint de salud.
         run: |
-          docker exec devtrack-ci-postgres psql -U devtrack -d devtrack -c '\dt' | grep -E 'users|projects|project_members|tasks'
+          DB_URL=jdbc:postgresql://localhost:5432/devtrack \
+          DB_USERNAME=devtrack \
+          DB_PASSWORD=devtrack \
+          DEVTRACK_JWT_SECRET="$DEVTRACK_JWT_SECRET" \
+          SERVER_PORT=8080 \
+          nohup java -jar target/devtrack-*.jar > /tmp/devtrack.log 2>&1 &
+
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
+              echo "La API arranca y esta sana"
+              break
+            fi
+            sleep 2
+          done
+
+          curl -sf http://localhost:8080/actuator/health | grep -q '"status":"UP"'
+          echo "--- tablas creadas por Flyway ---"
+          docker exec devtrack-ci-postgres psql -U devtrack -d devtrack -c '\dt'
+          docker exec devtrack-ci-postgres psql -U devtrack -d devtrack \
+            -c "select version, description, success from flyway_schema_history order by installed_rank;"
+          echo "--- el esquema coincide con las entidades (ddl-auto=validate) ---"
+          grep -q "Started DevTrackApplication" /tmp/devtrack.log
 
       - name: Subir el informe de pruebas
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: surefire-reports
           path: target/surefire-reports/
