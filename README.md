@@ -4,7 +4,7 @@ API REST para la gestión de **proyectos**, **miembros** y **tareas**. Monolito 
 Java y Spring Boot, con autorización por rol en cada proyecto, persistencia relacional
 versionada con Flyway y una suite de pruebas de integración contra PostgreSQL real.
 
-**Estado:** functionality completa de la v1. 223 pruebas en verde.
+**Estado:** funcionalidad completa de la v1. 227 pruebas en verde.
 
 ---
 

@@ -1,7 +1,7 @@
 # DevTrack — Backlog de tareas para el Agente 2 (implementación)
 
 > **Estado:** **Implementado** (2026-10-21). Las 22 tareas están completadas y verificadas
-> con **223 pruebas en verde**.
+> con **227 pruebas en verde**.
 >
 > Este documento se conserva como **contrato de aceptación** y registro de lo implementado:
 > cada criterio marcado abajo se comprobó con un test o con una ejecución real.
