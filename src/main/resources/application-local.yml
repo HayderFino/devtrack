@@ -1,0 +1,15 @@
+# Perfil de desarrollo local: Swagger UI expuesto y CORS permisivo para el frontend local.
+spring:
+  config:
+    activate:
+      on-profile: local
+
+devtrack:
+  jwt:
+    secret: ${DEVTRACK_JWT_SECRET:}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

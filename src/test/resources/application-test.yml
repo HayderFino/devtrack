@@ -1,0 +1,28 @@
+# Configuracion de los tests de integracion.
+# El DataSource lo inyecta @ServiceConnection desde el contenedor de Testcontainers.
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  task:
+    execution:
+      pool:
+        core-size: 2
+        max-size: 4
+
+devtrack:
+  jwt:
+    # Secreto de pruebas. No es un secreto real: vive solo en el repositorio y nunca
+    # se usa fuera del entorno de test (ADR-0003).
+    secret: devtrack-test-secret-at-least-32-chars!!
+    issuer: devtrack-test
+    access-token-ttl: PT15M
+  cors:
+    allowed-origins: http://localhost:3000
+
+logging:
+  level:
+    org.springframework.testcontainers: INFO
+    com.devtrack: INFO

@@ -1,0 +1,15 @@
+# Perfil de produccion: la documentacion OpenAPI se desactiva por completo.
+# Desactivar solo swagger-ui NO basta: /v3/api-docs seguiria accesible (ver T-17).
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+server:
+  forward-headers-strategy: framework
