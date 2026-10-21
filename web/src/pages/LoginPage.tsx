@@ -42,11 +42,11 @@ export function LoginPage() {
           </span>
         </div>
         <div className="auth-story__content">
-          <p className="eyebrow">Tu equipo, en la misma pagina</p>
+          <p className="eyebrow">Tu equipo, en la misma página</p>
           <h1>
             Menos ruido.
             <br />
-            Mas entregas.
+            Más entregas.
           </h1>
           <p>
             Organiza proyectos, reparte responsabilidades y mueve cada tarea hasta el final.
@@ -54,7 +54,7 @@ export function LoginPage() {
           </p>
           <ul className="auth-points">
             <li>Roles de propietario, editor y lector</li>
-            <li>Tareas con prioridad, responsable y fecha limite</li>
+            <li>Tareas con prioridad, responsable y fecha límite</li>
             <li>Historial de cambios con control de version</li>
           </ul>
         </div>
@@ -64,7 +64,7 @@ export function LoginPage() {
       <main className="auth-panel">
         <div className="auth-card">
           <p className="eyebrow">Bienvenido de nuevo</p>
-          <h2>Inicia sesion</h2>
+          <h2>Inicia sesión</h2>
           <p className="muted">Accede para continuar con tus proyectos.</p>
 
           <form className="form-stack" onSubmit={onSubmit}>
@@ -83,7 +83,7 @@ export function LoginPage() {
             </label>
 
             <label className="field">
-              <span>Contrasena</span>
+              <span>Contraseña</span>
               <input
                 type="password"
                 autoComplete="current-password"
@@ -101,7 +101,7 @@ export function LoginPage() {
           </form>
 
           <p className="auth-switch">
-            Aun no tienes cuenta? <Link to="/register">Crear cuenta</Link>
+            Aún no tienes cuenta? <Link to="/register">Crear cuenta</Link>
           </p>
         </div>
       </main>

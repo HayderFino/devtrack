@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import {
   createContext,
   useCallback,
@@ -22,7 +23,8 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => getStoredUser())
+  const queryClient = useQueryClient()
+  const [user, setUser] = useState<User | null>(() => (getToken() ? getStoredUser() : null))
   const [loading, setLoading] = useState(() => Boolean(getToken()))
 
   useEffect(() => {
@@ -55,29 +57,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    const onUnauthorized = () => setUser(null)
+    const onUnauthorized = () => {
+      queryClient.clear()
+      setUser(null)
+    }
     window.addEventListener('devtrack:unauthorized', onUnauthorized)
     return () => window.removeEventListener('devtrack:unauthorized', onUnauthorized)
-  }, [])
+  }, [queryClient])
 
-  const login = useCallback(async (email: string, password: string) => {
-    const auth = await api.login({ email, password })
-    setUser(auth.user)
-    return auth.user
-  }, [])
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const auth = await api.login({ email, password })
+      queryClient.clear()
+      setUser(auth.user)
+      return auth.user
+    },
+    [queryClient],
+  )
 
-  const register = useCallback(async (email: string, password: string, fullName: string) => {
-    await api.register({ email, password, fullName })
-    const auth = await api.login({ email, password })
-    saveSession(auth.accessToken, auth.user)
-    setUser(auth.user)
-    return auth.user
-  }, [])
+  const register = useCallback(
+    async (email: string, password: string, fullName: string) => {
+      await api.register({ email, password, fullName })
+      const auth = await api.login({ email, password })
+      saveSession(auth.accessToken, auth.user)
+      queryClient.clear()
+      setUser(auth.user)
+      return auth.user
+    },
+    [queryClient],
+  )
 
   const logout = useCallback(() => {
     clearSession()
+    queryClient.clear()
     setUser(null)
-  }, [])
+  }, [queryClient])
 
   const value = useMemo(
     () => ({ user, loading, login, register, logout }),

@@ -20,7 +20,7 @@ export function RegisterPage() {
     setError(null)
 
     if (password.length < 10) {
-      setError('La contrasena debe tener al menos 10 caracteres.')
+      setError('La contraseña debe tener al menos 10 caracteres.')
       return
     }
 
@@ -48,9 +48,9 @@ export function RegisterPage() {
         <div className="auth-story__content">
           <p className="eyebrow">Empieza en menos de un minuto</p>
           <h1>
-            Tu proximo
+            Tu próximo
             <br />
-            proyecto empieza aqui.
+            proyecto empieza aquí.
           </h1>
           <p>
             Crea tu cuenta, monta un proyecto y reparte el trabajo. DevTrack se encarga de que
@@ -58,7 +58,7 @@ export function RegisterPage() {
           </p>
           <div className="auth-quote">
             <span>“</span>
-            <p>La claridad tambien es una funcionalidad.</p>
+            <p>La claridad también es una funcionalidad.</p>
           </div>
         </div>
         <p className="auth-story__foot">Sin tarjeta · Sin instalaciones · v1</p>
@@ -67,8 +67,8 @@ export function RegisterPage() {
       <main className="auth-panel">
         <div className="auth-card">
           <p className="eyebrow">Crear cuenta</p>
-          <h2>Unete a DevTrack</h2>
-          <p className="muted">Solo necesitamos lo basico para empezar.</p>
+          <h2>Únete a DevTrack</h2>
+          <p className="muted">Solo necesitamos lo básico para empezar.</p>
 
           <form className="form-stack" onSubmit={onSubmit}>
             {error && <div className="alert alert--error">{error}</div>}
@@ -100,14 +100,14 @@ export function RegisterPage() {
             </label>
 
             <label className="field">
-              <span>Contrasena</span>
+              <span>Contraseña</span>
               <input
                 type="password"
                 autoComplete="new-password"
                 required
                 minLength={10}
                 maxLength={72}
-                placeholder="Minimo 10 caracteres"
+                placeholder="Mínimo 10 caracteres"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />
@@ -121,7 +121,7 @@ export function RegisterPage() {
           </form>
 
           <p className="auth-switch">
-            Ya tienes cuenta? <Link to="/login">Inicia sesion</Link>
+            Ya tienes cuenta? <Link to="/login">Inicia sesión</Link>
           </p>
         </div>
       </main>

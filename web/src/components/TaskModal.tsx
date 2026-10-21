@@ -90,7 +90,7 @@ export function TaskModal({
     <Modal
       title={editing ? 'Editar tarea' : 'Nueva tarea'}
       description={
-        editing ? 'Cambia el contenido, el estado o el responsable.' : 'Define que hay que hacer y quien se encarga.'
+        editing ? 'Cambia el contenido, el estado o el responsable.' : 'Define que hay que hacer y quién se encarga.'
       }
       onClose={onClose}
       width="lg"
@@ -100,7 +100,7 @@ export function TaskModal({
           {error && <div className="alert alert--error">{error}</div>}
 
           <label className="field">
-            <span>Titulo</span>
+            <span>Título</span>
             <input
               autoFocus
               required
@@ -112,7 +112,7 @@ export function TaskModal({
           </label>
 
           <label className="field">
-            <span>Descripcion <small>opcional</small></span>
+            <span>Descripción <small>opcional</small></span>
             <textarea
               rows={4}
               maxLength={10000}
@@ -161,10 +161,10 @@ export function TaskModal({
             </label>
 
             <label className="field">
-              <span>Fecha limite <small>opcional</small></span>
+              <span>Fecha límite <small>opcional</small></span>
               <input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
               {editing && (
-                <small>Dejar vacio no elimina una fecha ya guardada.</small>
+                <small>Dejar vacío no elimina una fecha ya guardada.</small>
               )}
             </label>
           </div>

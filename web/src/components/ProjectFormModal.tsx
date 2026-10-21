@@ -46,7 +46,7 @@ export function ProjectFormModal({
     <Modal
       title={editing ? 'Editar proyecto' : 'Nuevo proyecto'}
       description={
-        editing ? 'Actualiza el nombre o la descripcion del proyecto.' : 'Crea un espacio para organizar el trabajo.'
+        editing ? 'Actualiza el nombre o la descripción del proyecto.' : 'Crea un espacio para organizar el trabajo.'
       }
       onClose={onClose}
     >
@@ -67,7 +67,7 @@ export function ProjectFormModal({
           </label>
 
           <label className="field">
-            <span>Descripcion <small>opcional</small></span>
+            <span>Descripción <small>opcional</small></span>
             <textarea
               rows={4}
               maxLength={5000}

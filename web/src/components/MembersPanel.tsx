@@ -35,7 +35,7 @@ function AddMemberModal({ projectId, onClose }: { projectId: number; onClose: ()
 
   return (
     <Modal
-      title="Anadir miembro"
+      title="Añadir miembro"
       description="El usuario debe tener cuenta en DevTrack. Comparte su ID de perfil para incorporarlo."
       onClose={onClose}
     >
@@ -54,7 +54,7 @@ function AddMemberModal({ projectId, onClose }: { projectId: number; onClose: ()
               value={userId}
               onChange={(event) => setUserId(event.target.value)}
             />
-            <small>El usuario encuentra su ID en la tarjeta de sesion, abajo a la izquierda.</small>
+            <small>El usuario encuentra su ID en la tarjeta de sesión, abajo a la izquierda.</small>
           </label>
 
           <label className="field">
@@ -72,7 +72,7 @@ function AddMemberModal({ projectId, onClose }: { projectId: number; onClose: ()
           </button>
           <button type="submit" className="button button--primary" disabled={mutation.isPending || !userId}>
             {mutation.isPending && <Spinner size="sm" />}
-            Anadir miembro
+            Añadir miembro
           </button>
         </footer>
       </form>
@@ -134,7 +134,7 @@ export function MembersPanel({ project, members }: { project: Project; members: 
         </div>
         {isOwner && (
           <button type="button" className="button button--soft button--sm" onClick={() => setAdding(true)}>
-            + Anadir
+            + Añadir
           </button>
         )}
       </div>
@@ -201,7 +201,7 @@ export function MembersPanel({ project, members }: { project: Project; members: 
       </ul>
 
       {project.archived && (
-        <p className="panel__note">El proyecto esta archivado: la gestion de miembros esta deshabilitada.</p>
+        <p className="panel__note">El proyecto está archivado: la gestión de miembros está deshabilitada.</p>
       )}
 
       {adding && <AddMemberModal projectId={project.id} onClose={() => setAdding(false)} />}
@@ -209,7 +209,7 @@ export function MembersPanel({ project, members }: { project: Project; members: 
       {removing && (
         <ConfirmDialog
           title="Quitar miembro"
-          message={`${removing.fullName} perdera acceso al proyecto y a todas sus tareas.`}
+          message={`${removing.fullName} perderá acceso al proyecto y a todas sus tareas.`}
           confirmLabel="Quitar acceso"
           danger
           busy={removeMutation.isPending}
@@ -221,7 +221,7 @@ export function MembersPanel({ project, members }: { project: Project; members: 
       {transferring && (
         <ConfirmDialog
           title="Transferir propiedad"
-          message={`${transferring.fullName} pasara a ser propietario y tu quedaras como editor. Esta accion cambia los permisos de todo el equipo.`}
+          message={`${transferring.fullName} pasará a ser propietario y tu quedarás como editor. Esta acción cambia los permisos de todo el equipo.`}
           confirmLabel="Transferir"
           busy={transferMutation.isPending}
           onConfirm={() => transferMutation.mutate(transferring)}

@@ -19,7 +19,7 @@ function ProjectCard({ project }: { project: Project }) {
       </div>
       <h3>{project.name}</h3>
       <p className="project-card__description">
-        {project.description || 'Sin descripcion todavia.'}
+        {project.description || 'Sin descripción todavía.'}
       </p>
       <div className="project-card__meta">
         <span>{project.memberCount} {project.memberCount === 1 ? 'miembro' : 'miembros'}</span>
@@ -38,11 +38,12 @@ export function ProjectsPage() {
   const [creating, setCreating] = useState(false)
 
   const projectsQuery = useQuery({
-    queryKey: ['projects', showArchived],
-    queryFn: () => api.listProjects(showArchived ? 'all' : 'false'),
+    queryKey: ['projects'],
+    queryFn: () => api.listProjects('all'),
   })
 
-  const projects = projectsQuery.data?.content ?? []
+  const allProjects = projectsQuery.data?.content ?? []
+  const projects = showArchived ? allProjects : allProjects.filter((project) => !project.archived)
   const visible = projects.filter((project) => {
     const term = query.trim().toLowerCase()
     if (!term) return true
@@ -51,8 +52,8 @@ export function ProjectsPage() {
       (project.description ?? '').toLowerCase().includes(term)
     )
   })
-  const active = projects.filter((project) => !project.archived).length
-  const owned = projects.filter((project) => project.role === 'OWNER' && !project.archived).length
+  const active = allProjects.filter((project) => !project.archived).length
+  const owned = allProjects.filter((project) => project.role === 'OWNER' && !project.archived).length
 
   return (
     <div className="page">
@@ -80,11 +81,11 @@ export function ProjectsPage() {
         <article className="stat-card">
           <span className="stat-card__label">Bajo tu propiedad</span>
           <strong>{owned}</strong>
-          <span className="stat-card__hint">Puedes editar y gestionar miembros</span>
+          <span className="stat-card__hint">Puedes editar y gestiónar miembros</span>
         </article>
         <article className="stat-card">
           <span className="stat-card__label">Archivados</span>
-          <strong>{projects.length - active}</strong>
+          <strong>{allProjects.length - active}</strong>
           <span className="stat-card__hint">{showArchived ? 'Visibles en la lista' : 'Ocultos por defecto'}</span>
         </article>
       </section>
@@ -129,7 +130,7 @@ export function ProjectsPage() {
 
         {projectsQuery.isSuccess && visible.length === 0 && (
           <EmptyState
-            title={query ? 'Sin resultados' : 'Aun no hay proyectos'}
+            title={query ? 'Sin resultados' : 'Aún no hay proyectos'}
             description={
               query
                 ? 'Prueba con otro termino de busqueda.'

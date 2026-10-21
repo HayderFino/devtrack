@@ -9,4 +9,10 @@ export default defineConfig({
       '/api': 'http://localhost:8080',
     },
   },
+  preview: {
+    port: 3000,
+    proxy: {
+      '/api': 'http://localhost:8080',
+    },
+  },
 })

@@ -95,7 +95,7 @@ export function ProjectDetailPage() {
                 {project.archived && <span className="badge badge--neutral">Archivado</span>}
               </div>
               <p className="muted">
-                {project.description || 'Sin descripcion.'}
+                {project.description || 'Sin descripción.'}
               </p>
             </div>
           </div>
@@ -133,8 +133,16 @@ export function ProjectDetailPage() {
 
       {project.archived && (
         <div className="alert alert--warning">
-          Este proyecto esta archivado. Su contenido es de solo lectura; para trabajar de nuevo,
-          pide a un administrador que lo reactive.
+          Este proyecto está archivado. Su contenido y su equipo son de solo lectura.
+        </div>
+      )}
+
+      {membersQuery.isError && (
+        <div className="alert alert--error">
+          No se pudo cargar el equipo: {errorMessage(membersQuery.error)}.{' '}
+          <button type="button" className="text-button" onClick={() => membersQuery.refetch()}>
+            Reintentar
+          </button>
         </div>
       )}
 
@@ -162,7 +170,7 @@ export function ProjectDetailPage() {
       {archiving && (
         <ConfirmDialog
           title="Archivar proyecto"
-          message="El proyecto pasara a solo lectura y dejara de aparecer en la lista activa. Podras consultarlo desde el filtro de archivados."
+          message="El proyecto pasará a solo lectura y dejará de aparecer en la lista activa. Podrás consultarlo desde el filtro de archivados."
           confirmLabel="Archivar proyecto"
           danger
           busy={archiveMutation.isPending}

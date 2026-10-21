@@ -186,7 +186,7 @@ export function TaskBoard({ project, members }: { project: Project; members: Pro
             <span aria-hidden="true">⌕</span>
             <input
               type="search"
-              placeholder="Buscar por titulo o descripcion..."
+              placeholder="Buscar por título o descripción..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -247,13 +247,13 @@ export function TaskBoard({ project, members }: { project: Project; members: Pro
 
       {tasksQuery.isSuccess && tasks.length === 0 && (
         <EmptyState
-          title={hasFilters ? 'Ninguna tarea coincide' : 'El tablero esta vacio'}
+          title={hasFilters ? 'Ninguna tarea coincide' : 'El tablero está vacío'}
           description={
             hasFilters
-              ? 'Prueba a quitar algun filtro para ver mas resultados.'
+              ? 'Prueba a quitar algún filtro para ver más resultados.'
               : canEdit
                 ? 'Crea la primera tarea y asignala a alguien del equipo.'
-                : 'Cuando el equipo cree tareas apareceran aqui.'
+                : 'Cuando el equipo cree tareas aparecerán aquí.'
           }
           action={
             hasFilters ? (
@@ -315,7 +315,7 @@ export function TaskBoard({ project, members }: { project: Project; members: Pro
       {deleting && (
         <ConfirmDialog
           title="Eliminar tarea"
-          message={`Se eliminara "${deleting.title}" de forma permanente. Esta accion no se puede deshacer.`}
+          message={`Se eliminará "${deleting.title}" de forma permanente. Esta acción no se puede deshacer.`}
           confirmLabel="Eliminar"
           danger
           busy={deleteMutation.isPending}

@@ -27,7 +27,10 @@ export function Layout() {
 
         <div className="sidebar__footer">
           {user && (
-            <div className="user-card">
+            <div
+              className="user-card"
+              title={`${user.fullName} · ${user.email} · ID #${user.id}`}
+            >
               <span className="avatar">{initials(user.fullName)}</span>
               <span className="user-card__meta">
                 <strong>{user.fullName}</strong>
@@ -39,7 +42,7 @@ export function Layout() {
             <span className="nav-link__icon" aria-hidden="true">
               ↪
             </span>
-            Cerrar sesion
+            Cerrar sesión
           </button>
         </div>
       </aside>

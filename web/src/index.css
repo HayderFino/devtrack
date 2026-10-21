@@ -1445,11 +1445,15 @@ button:disabled {
 
 .task-card__actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
   padding-top: 0.5rem;
   border-top: 1px solid #f2f4f7;
+}
+
+.task-card__actions .text-button {
+  white-space: nowrap;
 }
 
 .select-compact {
@@ -1462,8 +1466,13 @@ button:disabled {
   font-weight: 700;
 }
 
+.task-card__actions .select-compact {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .task-card__actions .spinner {
-  margin-left: auto;
+  flex: 0 0 auto;
 }
 
 /* ------------------------------------------------------------------ */

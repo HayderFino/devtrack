@@ -60,7 +60,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     throw new ApiError(0, {
       code: 'NETWORK_ERROR',
       title: 'Sin conexion',
-      detail: 'No se pudo contactar con el servidor. Comprueba que la API esta levantada.',
+      detail: 'No se pudo contactar con el servidor. Comprueba que la API está levantada.',
     })
   }
 
