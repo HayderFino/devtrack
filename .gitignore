@@ -11,8 +11,8 @@ target/
 
 *.log
 
-# Frontend (fuera del alcance de la API backend): dependencias y artefactos de build.
-# El codigo fuente del frontend, si se decide publicarlo, va en su propio repositorio.
+# Frontend
 web/node_modules/
 web/dist/
 web/.vite/
+web/*.tsbuildinfo

@@ -1,5 +1,7 @@
 # DevTrack
 
+[![CI](https://github.com/HayderFino/devtrack/actions/workflows/ci.yml/badge.svg)](https://github.com/HayderFino/devtrack/actions/workflows/ci.yml)
+
 Aplicación full stack para la gestión de **proyectos**, **miembros** y **tareas**. API REST
 en Java y Spring Boot, con autorización por rol en cada proyecto, persistencia relacional
 versionada con Flyway y una suite de pruebas de integración contra PostgreSQL real. Interfaz

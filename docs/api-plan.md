@@ -312,28 +312,25 @@ No se borran en cascada las tareas ni los miembros; el histórico se conserva.
 
 **Autenticado + miembro.** Orden: `OWNER` primero, luego resto por `addedAt`.
 
-**200 OK**
+**200 OK** → `List<ProjectMemberResponse>` (sin paginación: el equipo se sirve completo)
 
 ```json
-{
-  "content": [
-    {
-      "userId": 1,
-      "email": "ada@devtrack.dev",
-      "fullName": "Ada Lovelace",
-      "role": "OWNER",
-      "addedAt": "2026-10-21T14:10:00.000Z"
-    },
-    {
-      "userId": 2,
-      "email": "linus@devtrack.dev",
-      "fullName": "Linus Torvalds",
-      "role": "EDITOR",
-      "addedAt": "2026-10-21T14:20:00.000Z"
-    }
-  ],
-  "page": 0, "size": 20, "totalElements": 2, "totalPages": 1, "first": true, "last": true
-}
+[
+  {
+    "userId": 1,
+    "email": "ada@devtrack.dev",
+    "fullName": "Ada Lovelace",
+    "role": "OWNER",
+    "addedAt": "2026-10-21T14:10:00.000Z"
+  },
+  {
+    "userId": 2,
+    "email": "linus@devtrack.dev",
+    "fullName": "Linus Torvalds",
+    "role": "EDITOR",
+    "addedAt": "2026-10-21T14:20:00.000Z"
+  }
+]
 ```
 
 **Errores:** `401`, `404`.
@@ -701,3 +698,4 @@ Recogidas durante la implementación. La propuesta original de este documento er
 | 6 | `project_members.added_at` | `created_at` / `updated_at` | Uniformidad: todas las tablas extienden `BaseEntity`. El DTO sigue exponiendo `addedAt`. |
 | 7 | Cuatro migraciones | Tres (`V1` usuarios, `V2` proyectos y miembros, `V3` tareas) | Una migración por grupo de tablas; sin migraciones de relleno. |
 | 8 | `GET /projects/{id}/tasks/{taskId}` → siempre `TASK_NOT_FOUND` | `PROJECT_NOT_FOUND` si no se es miembro; `TASK_NOT_FOUND` si se es miembro y la tarea no está en ese proyecto | El proyecto es la frontera de autorización: si no eres miembro, no se revela ni el proyecto ni sus tareas. |
+| 9 | `GET /projects/{id}/members` con envoltura de paginación | Devuelve un **array plano** (`List<ProjectMemberResponse>`) | El equipo de un proyecto se sirve completo: paginarlo no aporta nada y complica el cliente. Corregido tras revisar el código y los tests. |
