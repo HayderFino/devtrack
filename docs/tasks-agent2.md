@@ -373,7 +373,7 @@ T-00 → T-01 → T-02 → T-03 → T-04 → T-05
 |---|---|
 | T-00 · toolchain instalado | `java -version` (21.0.13), `docker --version` (29.9.2), `colima version` (0.10.3) |
 | T-02 · healthcheck de PostgreSQL | `docker compose ps` → `Up (healthy)` |
-| T-18 · la imagen arranca | `docker compose config` válido; el jar se arrancó y se ejercitó el flujo completo por HTTP |
+| T-18 · la imagen arranca | `docker build` correcto y **stack completo levantado** (`docker compose --profile api up -d`): ambos contenedores `healthy`, flujo HTTP completo ejercitado sobre el puerto 8080, migraciones aplicadas y proceso ejecutándose como usuario no root (`uid=100(devtrack)`) |
 | T-19 · CI en verde | Workflow escrito; **no ejecutado** (requiere publicar el repositorio en GitHub, pregunta Q-06 sin responder) |
 
 ### Pruebas de humo end-to-end ejecutadas
@@ -392,10 +392,25 @@ POST /api/v1/projects  (nombre vacio)      -> 400 VALIDATION_ERROR + errors[]
 GET  /v3/api-docs                         -> 200 (OpenAPI 3.1.0, 11 rutas, esquema bearerAuth)
 ```
 
+### Verificación del stack en Docker
+
+```
+docker compose --profile api up -d
+devtrack-api        Up (healthy)
+devtrack-postgres   Up (healthy)
+
+flyway_schema_history:  1 users | 2 projects and members | 3 tasks
+GET /v3/api-docs       -> 200, OpenAPI 3.1.0, 11 rutas
+GET /swagger-ui/index.html -> 200
+POST .../tasks         -> 201
+PATCH .../tasks/{id}   -> 422 INVALID_STATUS_TRANSITION (DONE -> TODO)
+```
+
 ### Trabajo pendiente
 
 | Ítem | Motivo |
 |---|---|
+| Instalar GitHub CLI y publicar el repositorio | `gh` no esta instalado en la maquina y falta la cuenta de GitHub del usuario (Q-06) |
 | Publicar el repositorio en GitHub y ejecutar el CI | Requiere la cuenta de GitHub del usuario (Q-06 sin responder) |
 | Publicar la imagen en un registro | Fuera del alcance de la v1 |
 | Licencia | Pendiente de decidir |

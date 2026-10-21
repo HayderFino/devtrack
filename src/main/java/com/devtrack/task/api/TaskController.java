@@ -23,6 +23,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import com.devtrack.shared.config.OpenApiConfig;
+
 import com.devtrack.shared.security.CurrentUser;
 import com.devtrack.shared.web.PageResponse;
 import com.devtrack.task.api.dto.AssignTaskRequest;
@@ -42,6 +49,8 @@ import com.devtrack.task.service.TaskService;
  */
 @RestController
 @RequestMapping("/api/v1/projects/{projectId}/tasks")
+@Tag(name = "Tareas", description = "CRUD de tareas anidado bajo el proyecto y maquina de estados")
+@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
 public class TaskController {
 
     private final TaskService taskService;
@@ -54,6 +63,13 @@ public class TaskController {
      * Lista las tareas del proyecto con los filtros aplicados.
      */
     @GetMapping
+    @Operation(summary = "Listar tareas", description = "Filtros combinables; paginacion estable con desempate por id.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Pagina de tareas"),
+            @ApiResponse(responseCode = "400", description = "Filtro o paginacion invalidos"),
+            @ApiResponse(responseCode = "401", description = "No autenticado"),
+            @ApiResponse(responseCode = "404", description = "Inexistente o no miembro")
+    })
     public PageResponse<TaskResponse> list(
             @AuthenticationPrincipal CurrentUser caller,
             @PathVariable Long projectId,
@@ -82,6 +98,15 @@ public class TaskController {
      * Crea una tarea en el proyecto. Requiere rol EDITOR o superior.
      */
     @PostMapping
+    @Operation(summary = "Crear tarea", description = "Requiere EDITOR o superior; el asignado debe ser miembro del proyecto.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Tarea creada; Location con su URI"),
+            @ApiResponse(responseCode = "400", description = "Datos invalidos"),
+            @ApiResponse(responseCode = "401", description = "No autenticado"),
+            @ApiResponse(responseCode = "403", description = "VIEWER sin permiso de edicion"),
+            @ApiResponse(responseCode = "404", description = "Proyecto inexistente o no miembro"),
+            @ApiResponse(responseCode = "422", description = "Asignado que no es miembro")
+    })
     public ResponseEntity<TaskResponse> create(
             @AuthenticationPrincipal CurrentUser caller,
             @PathVariable Long projectId,
@@ -96,6 +121,12 @@ public class TaskController {
      * Detalle de una tarea.
      */
     @GetMapping("/{taskId}")
+    @Operation(summary = "Obtener tarea", description = "Requiere ser miembro; una tarea de otro proyecto responde 404 TASK_NOT_FOUND.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Tarea"),
+            @ApiResponse(responseCode = "401", description = "No autenticado"),
+            @ApiResponse(responseCode = "404", description = "Proyecto no visible o tarea fuera de el")
+    })
     public TaskResponse get(
             @AuthenticationPrincipal CurrentUser caller, @PathVariable Long projectId, @PathVariable Long taskId) {
         return taskService.findById(projectId, taskId, caller);
@@ -105,6 +136,16 @@ public class TaskController {
      * Actualiza una tarea. Requiere rol EDITOR o superior.
      */
     @PatchMapping("/{taskId}")
+    @Operation(summary = "Actualizar tarea", description = "Requiere EDITOR; el estado se valida contra la maquina de transiciones.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Tarea actualizada"),
+            @ApiResponse(responseCode = "400", description = "Datos invalidos"),
+            @ApiResponse(responseCode = "401", description = "No autenticado"),
+            @ApiResponse(responseCode = "403", description = "VIEWER sin permiso de edicion"),
+            @ApiResponse(responseCode = "404", description = "Proyecto no visible o tarea fuera de el"),
+            @ApiResponse(responseCode = "409", description = "Conflicto de version"),
+            @ApiResponse(responseCode = "422", description = "Transicion de estado no permitida")
+    })
     public TaskResponse update(
             @AuthenticationPrincipal CurrentUser caller,
             @PathVariable Long projectId,
@@ -118,6 +159,16 @@ public class TaskController {
      * Asigna o desasigna una tarea. Idempotente.
      */
     @PutMapping("/{taskId}/assignee")
+    @Operation(summary = "Asignar o desasignar", description = "Idempotente; assigneeId null desasigna.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Tarea asignada o desasignada"),
+            @ApiResponse(responseCode = "400", description = "Datos invalidos"),
+            @ApiResponse(responseCode = "401", description = "No autenticado"),
+            @ApiResponse(responseCode = "403", description = "VIEWER sin permiso de edicion"),
+            @ApiResponse(responseCode = "404", description = "Proyecto no visible o tarea fuera de el"),
+            @ApiResponse(responseCode = "409", description = "Conflicto de version"),
+            @ApiResponse(responseCode = "422", description = "Asignado que no es miembro")
+    })
     public TaskResponse assign(
             @AuthenticationPrincipal CurrentUser caller,
             @PathVariable Long projectId,
@@ -131,6 +182,14 @@ public class TaskController {
      * Elimina una tarea.
      */
     @DeleteMapping("/{taskId}")
+    @Operation(summary = "Eliminar tarea", description = "OWNER puede borrar cualquiera; EDITOR solo las que creo.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Tarea eliminada"),
+            @ApiResponse(responseCode = "401", description = "No autenticado"),
+            @ApiResponse(responseCode = "403", description = "VIEWER sin permiso de edicion"),
+            @ApiResponse(responseCode = "404", description = "Proyecto no visible o tarea fuera de el"),
+            @ApiResponse(responseCode = "422", description = "EDITOR que no creo la tarea")
+    })
     public ResponseEntity<Void> delete(
             @AuthenticationPrincipal CurrentUser caller, @PathVariable Long projectId, @PathVariable Long taskId) {
 

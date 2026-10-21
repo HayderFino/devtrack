@@ -8,19 +8,19 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
-import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 
 /**
  * Metadatos del documento OpenAPI que describe la API de DevTrack.
  *
- * <p>El esquema de seguridad {@code bearerAuth} se aplica de forma global; los endpoints
- * publicos (registro y login) lo anulan explicitamente con {@code @SecurityRequirements}.
+ * <p>El esquema {@code bearerAuth} se declara una vez. Cada controller protegido lo exige
+ * con {@code @SecurityRequirement}; los endpoints de autenticacion son publicos y no lo
+ * declaran.
  */
 @Configuration
 public class OpenApiConfig {
 
-    private static final String SECURITY_SCHEME = "bearerAuth";
+    public static final String BEARER_AUTH = "bearerAuth";
 
     @Bean
     OpenAPI devTrackOpenApi() {
@@ -32,13 +32,12 @@ public class OpenApiConfig {
                         .contact(new Contact().name("DevTrack"))
                         .license(new License().name("Por definir")))
                 .components(new Components().addSecuritySchemes(
-                        SECURITY_SCHEME,
+                        BEARER_AUTH,
                         new SecurityScheme()
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")
                                 .bearerFormat("JWT")
-                                .description("Token de acceso JWT. Se obtiene en POST /api/v1/auth/login.")))
-                .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME));
+                                .description("Token de acceso JWT. Se obtiene en POST /api/v1/auth/login.")));
     }
 
     private static String description() {

@@ -9,6 +9,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import com.devtrack.user.api.dto.AuthResponse;
 import com.devtrack.user.api.dto.LoginRequest;
 import com.devtrack.user.api.dto.RegisterRequest;
@@ -22,6 +28,8 @@ import com.devtrack.user.service.AuthService;
  */
 @RestController
 @RequestMapping("/api/v1/auth")
+@Tag(name = "Autenticacion", description = "Registro e inicio de sesion (endpoints publicos)")
+@SecurityRequirements
 public class AuthController {
 
     private final AuthService authService;
@@ -35,6 +43,12 @@ public class AuthController {
      */
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Registrar una cuenta", description = "Crea un usuario y devuelve su perfil, sin token.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Cuenta creada"),
+            @ApiResponse(responseCode = "400", description = "Datos invalidos"),
+            @ApiResponse(responseCode = "409", description = "Email ya registrado")
+    })
     public UserResponse register(@Valid @RequestBody RegisterRequest request) {
         return authService.register(request);
     }
@@ -43,6 +57,12 @@ public class AuthController {
      * Inicia sesion y devuelve un token de acceso.
      */
     @PostMapping("/login")
+    @Operation(summary = "Iniciar sesion", description = "Devuelve un JWT Bearer y el perfil del usuario.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Credenciales correctas"),
+            @ApiResponse(responseCode = "400", description = "Datos invalidos"),
+            @ApiResponse(responseCode = "401", description = "Credenciales incorrectas o cuenta deshabilitada")
+    })
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
     }

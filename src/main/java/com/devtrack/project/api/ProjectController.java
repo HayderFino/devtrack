@@ -19,6 +19,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import com.devtrack.shared.config.OpenApiConfig;
+
 import com.devtrack.project.api.dto.CreateProjectRequest;
 import com.devtrack.project.api.dto.ProjectResponse;
 import com.devtrack.project.api.dto.UpdateProjectRequest;
@@ -34,6 +41,8 @@ import com.devtrack.shared.web.PageResponse;
  */
 @RestController
 @RequestMapping("/api/v1/projects")
+@Tag(name = "Proyectos", description = "CRUD de proyectos; el creador pasa a ser OWNER")
+@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
 public class ProjectController {
 
     private final ProjectService projectService;
@@ -46,6 +55,12 @@ public class ProjectController {
      * Crea un proyecto. El creator se convierte en propietario.
      */
     @PostMapping
+    @Operation(summary = "Crear proyecto", description = "Crea un proyecto y convierte al llamador en OWNER.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Proyecto creado; Location con su URI"),
+            @ApiResponse(responseCode = "400", description = "Datos invalidos"),
+            @ApiResponse(responseCode = "401", description = "No autenticado")
+    })
     public ResponseEntity<ProjectResponse> create(
             @AuthenticationPrincipal CurrentUser caller, @Valid @RequestBody CreateProjectRequest request) {
 
@@ -59,6 +74,12 @@ public class ProjectController {
      * @param archived filtro: {@code true}, {@code false} (por defecto) o {@code all}
      */
     @GetMapping
+    @Operation(summary = "Listar mis proyectos", description = "Solo devuelve proyectos donde el llamador es miembro.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Pagina de proyectos"),
+            @ApiResponse(responseCode = "400", description = "Paginacion o filtro invalido"),
+            @ApiResponse(responseCode = "401", description = "No autenticado")
+    })
     public PageResponse<ProjectResponse> list(
             @AuthenticationPrincipal CurrentUser caller,
             @RequestParam(required = false) String archived,
@@ -71,6 +92,12 @@ public class ProjectController {
      * Detalle de un proyecto.
      */
     @GetMapping("/{projectId}")
+    @Operation(summary = "Obtener proyecto", description = "Requiere ser miembro; si no, responde 404.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Proyecto"),
+            @ApiResponse(responseCode = "401", description = "No autenticado"),
+            @ApiResponse(responseCode = "404", description = "Inexistente o no miembro")
+    })
     public ProjectResponse get(@AuthenticationPrincipal CurrentUser caller, @PathVariable Long projectId) {
         return projectService.findByIdForMember(projectId, caller);
     }
@@ -79,6 +106,14 @@ public class ProjectController {
      * Actualiza un proyecto. Solo el propietario.
      */
     @PatchMapping("/{projectId}")
+    @Operation(summary = "Actualizar proyecto", description = "Solo OWNER (o ADMIN de plataforma).")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Proyecto actualizado"),
+            @ApiResponse(responseCode = "400", description = "Datos invalidos"),
+            @ApiResponse(responseCode = "401", description = "No autenticado"),
+            @ApiResponse(responseCode = "403", description = "Miembro sin rol suficiente"),
+            @ApiResponse(responseCode = "404", description = "Inexistente o no miembro")
+    })
     public ProjectResponse update(
             @AuthenticationPrincipal CurrentUser caller,
             @PathVariable Long projectId,
@@ -91,6 +126,13 @@ public class ProjectController {
      * Archiva un proyecto (borrado logico). Solo el propietario.
      */
     @DeleteMapping("/{projectId}")
+    @Operation(summary = "Archivar proyecto", description = "Borrado logico; solo OWNER (o ADMIN de plataforma).")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Proyecto archivado"),
+            @ApiResponse(responseCode = "401", description = "No autenticado"),
+            @ApiResponse(responseCode = "403", description = "Miembro sin rol suficiente"),
+            @ApiResponse(responseCode = "404", description = "Inexistente o no miembro")
+    })
     public ResponseEntity<Void> archive(@AuthenticationPrincipal CurrentUser caller, @PathVariable Long projectId) {
         projectService.archive(projectId, caller);
         return ResponseEntity.noContent().build();
