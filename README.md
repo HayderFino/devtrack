@@ -7,7 +7,7 @@ en Java y Spring Boot, con autorización por rol en cada proyecto, persistencia 
 versionada con Flyway y una suite de pruebas de integración contra PostgreSQL real. Interfaz
 web en React, TypeScript y Vite.
 
-**Estado:** backend v1 completo con 227 pruebas en verde y frontend v1 operativo.
+**Estado:** backend v1 completo con 234 pruebas en verde y frontend v1 operativo.
 
 ---
 
@@ -303,6 +303,8 @@ Aspectos destacados:
 | [`docs/api-plan.md`](docs/api-plan.md) | Contrato HTTP completo: rutas, cuerpos, códigos, catálogo de errores |
 | [`docs/tasks-agent2.md`](docs/tasks-agent2.md) | Plan de trabajo con tareas, criterios de aceptación y pruebas |
 | [`docs/adr/`](docs/adr/) | Decisiones arquitectónicas con contexto, alternativas y consecuencias |
+| [`docs/contexto-agente-1-backend.md`](docs/contexto-agente-1-backend.md) | **Contexto de traspaso del backend**: estado, decisiones fijadas, trampas del entorno y pendiente |
+| [`docs/contexto-agente-2-frontend.md`](docs/contexto-agente-2-frontend.md) | **Contexto de traspaso del frontend**: estado, contrato con la API y pendiente |
 
 ## Qué no incluye esta versión
 
