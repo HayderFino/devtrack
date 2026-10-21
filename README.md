@@ -1,10 +1,11 @@
 # DevTrack
 
-API REST para la gestión de **proyectos**, **miembros** y **tareas**. Monolito modular en
-Java y Spring Boot, con autorización por rol en cada proyecto, persistencia relacional
-versionada con Flyway y una suite de pruebas de integración contra PostgreSQL real.
+Aplicación full stack para la gestión de **proyectos**, **miembros** y **tareas**. API REST
+en Java y Spring Boot, con autorización por rol en cada proyecto, persistencia relacional
+versionada con Flyway y una suite de pruebas de integración contra PostgreSQL real. Interfaz
+web en React, TypeScript y Vite.
 
-**Estado:** funcionalidad completa de la v1. 227 pruebas en verde.
+**Estado:** backend v1 completo con 227 pruebas en verde y frontend v1 operativo.
 
 ---
 
@@ -14,6 +15,7 @@ versionada con Flyway y una suite de pruebas de integración contra PostgreSQL r
 - [Stack](#stack)
 - [Requisitos previos](#requisitos-previos)
 - [Arranque local](#arranque-local)
+- [Frontend](#frontend)
 - [Pruebas](#pruebas)
 - [Autenticación y uso](#autenticación-y-uso)
 - [Autorización](#autorización)
@@ -58,6 +60,9 @@ identificador de un proyecto o de una tarea no concede ningún acceso.
 | jjwt | 0.13.0 |
 | Maven | 3.9.16 (Maven Wrapper) |
 | Docker Engine / Compose | 29.9.2 / 5.6.1 |
+| React / React Router | 19.3 / 7.18 |
+| TypeScript / Vite | 7.0 / 8.3 |
+| TanStack Query | 5.104 |
 
 Detalle y alternativas descartadas: [`ADR-0002`](docs/adr/0002-stack-y-versiones.md).
 
@@ -68,6 +73,8 @@ Detalle y alternativas descartadas: [`ADR-0002`](docs/adr/0002-stack-y-versiones
 | JDK | 21 | `java -version` debe mostrar `21.x` |
 | Docker | con Compose v2 | Docker Desktop o Colima |
 | Maven | — | No hace falta: se usa `./mvnw` |
+| Node.js | 20.19+ o 22.12+ | Necesario solo para el frontend |
+| npm | 10+ | Incluido con Node.js |
 
 **Con Colima** (alternativa a Docker Desktop en macOS):
 
@@ -112,6 +119,31 @@ Con Docker en vez de Maven:
 ```bash
 docker compose --profile api up -d --build
 ```
+
+## Frontend
+
+La SPA vive en [`web/`](web/) y se sirve en **http://localhost:3000**. Vite redirige
+`/api` al backend en `:8080`, por lo que no hace falta configurar CORS en desarrollo.
+
+```bash
+# Con la API ya levantada
+cd web
+npm install
+npm run dev        # http://localhost:3000
+```
+
+Usa **`localhost`**, no `127.0.0.1`: el origen permitido por defecto en la API es
+`http://localhost:3000`.
+
+```bash
+npm run build      # typecheck + bundle de produccion en web/dist
+npm run preview    # sirve el bundle compilado
+```
+
+Incluye registro e inicio de sesión, listado y gestión de proyectos, tablero de tareas por
+estado con filtros, asignación, prioridades y fechas límite, y administración de miembros
+para el propietario. El token JWT se guarda en `sessionStorage` y se descarta al cerrar la
+pestaña o al recibir un `401`.
 
 ## Pruebas
 
@@ -208,6 +240,11 @@ devtrack/
 ├── Dockerfile                 multi-stage: JDK 21 + JRE 21, usuario no root
 ├── docker-compose.yml         PostgreSQL 18 + servicio opcional de la API
 ├── .github/workflows/ci.yml   build + tests + verificación del esquema
+├── web/                       SPA React + TypeScript + Vite
+│   ├── src/pages/             login, registro, proyectos y detalle
+│   ├── src/components/        tablero, modales, miembros y layout
+│   ├── src/lib/               cliente API, tipos, sesión y formato
+│   └── vite.config.ts         puerto 3000 y proxy /api → :8080
 ├── docs/
 │   ├── architecture.md        requisitos, modelo, seguridad, riesgos, sprints
 │   ├── api-plan.md            contrato HTTP completo

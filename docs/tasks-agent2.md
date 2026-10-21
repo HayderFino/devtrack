@@ -374,7 +374,7 @@ T-00 → T-01 → T-02 → T-03 → T-04 → T-05
 | T-00 · toolchain instalado | `java -version` (21.0.13), `docker --version` (29.9.2), `colima version` (0.10.3) |
 | T-02 · healthcheck de PostgreSQL | `docker compose ps` → `Up (healthy)` |
 | T-18 · la imagen arranca | `docker build` correcto y **stack completo levantado** (`docker compose --profile api up -d`): ambos contenedores `healthy`, flujo HTTP completo ejercitado sobre el puerto 8080, migraciones aplicadas y proceso ejecutándose como usuario no root (`uid=100(devtrack)`) |
-| T-19 · CI en verde | Workflow escrito; **no ejecutado** (requiere publicar el repositorio en GitHub, pregunta Q-06 sin responder) |
+| T-19 · CI en verde | **Ejecutado y en verde**: [run 39675635132](https://github.com/HayderFino/devtrack/actions/runs/39675635132). 227 pruebas, `BUILD SUCCESS`, jar arrancado contra una base limpia y esquema verificado (4 tablas + 3 migraciones) |
 
 ### Pruebas de humo end-to-end ejecutadas
 
@@ -410,7 +410,22 @@ PATCH .../tasks/{id}   -> 422 INVALID_STATUS_TRANSITION (DONE -> TODO)
 
 | Ítem | Motivo |
 |---|---|
-| Instalar GitHub CLI y publicar el repositorio | `gh` no esta instalado en la maquina y falta la cuenta de GitHub del usuario (Q-06) |
-| Publicar el repositorio en GitHub y ejecutar el CI | Requiere la cuenta de GitHub del usuario (Q-06 sin responder) |
+| ~~Instalar GitHub CLI y publicar el repositorio~~ | **Hecho**: `gh` 2.103.0, repo publico con 13 topics, tag `v1.0.0` |
+| ~~Publicar el repositorio en GitHub y ejecutar el CI~~ | **Hecho**: https://github.com/HayderFino/devtrack (público), CI en verde |
 | Publicar la imagen en un registro | Fuera del alcance de la v1 |
 | Licencia | Pendiente de decidir |
+
+
+---
+
+## Correccion del CI (2026-10-21)
+
+El primer workflow **fallo** y el diagnostico fue util: no era un problema del codigo, sino
+del propio workflow.
+
+| # | Defecto | Correccion |
+|---|---|---|
+| 1 | El paso "Comprobar que el esquema se genera desde cero" consultaba `devtrack-ci-postgres`, una base de datos que **los tests nunca usan** (los tests de integracion levantan su propio contenedor efimero con Testcontainers). Fallaba siempre con "Did not find any tables". | El paso ahora **arranca el jar empaquetado** contra esa base, que es el camino real de produccion: aplica las migraciones, expone el endpoint de salud y se enumeran las tablas y el historial de Flyway. |
+| 2 | El secreto efimero de JWT se imprimia en el log publico de la ejecucion. | Se enmascara con `::add-mask::`. |
+| 3 | `actions/checkout@v4`, `setup-java@v4` y `upload-artifact@v4` estaban obsoletas (Node.js 20 deprecado; `setup-java@v4` oficialmente deprecado). | Actualizadas a `checkout@v7`, `setup-java@v6` y `upload-artifact@v7`. |
+| 4 | El workflow disparaba en `main` pero la rama local se llamaba `master`: **el CI no se habria ejecutado nunca**. | Rama renombrada a `main`. |
